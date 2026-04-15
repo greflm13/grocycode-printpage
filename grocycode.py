@@ -35,15 +35,15 @@ def main() -> None:
     pagesize = pagesizes.portrait(pagesizes.A4)
     pdf = Canvas(os.path.join(args.output, args.product_name + ".pdf"), pagesize=pagesize)
 
-    scale_x = pagesize[0] / 1188
-    scale_y = pagesize[1] / 840
+    scale_x = pagesize[0] / 2100
+    scale_y = pagesize[1] / 2970
     pdf.scale(scale_x, scale_y)
 
     black = colors.HexColor("#000000")
 
     pdf.setFont("header", 48)
     pdf.setFillColor(black)
-    pdf.drawCentredString(x=1188 / 2, y=790, text=args.product_name)
+    pdf.drawCentredString(x=2100 / 2, y=2870, text=args.product_name)
 
     encoded = encode(f"grcy:p:{args.product_id}".encode("utf-8"))
     img = Image.frombytes("RGB", (encoded.width, encoded.height), encoded.pixels)
@@ -54,9 +54,9 @@ def main() -> None:
 
     image = ImageReader(buffer)
 
-    for i in range(14):
-        for j in range(19):
-            pdf.drawImage(image, x=45 + i * 80, y=20 + j * 40, width=60, height=30)
+    for i in range(10):
+        for j in range(27):
+            pdf.drawImage(image, x=85 + i * 203.25, y=135 + j * 100, width=100, height=100)
 
     pdf.save()
 
