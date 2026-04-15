@@ -1,0 +1,17 @@
+{
+    "folders": [
+        {
+            "path": "./",
+            "name": "grocy printpage"
+        }
+    ],
+    "settings": {
+        "python-envs.pythonProjects": [
+            {
+                "path": ".",
+                "envManager": "ms-python.python:pyenv",
+                "packageManager": "ms-python.python:pip"
+            }
+        ]
+    }
+}
