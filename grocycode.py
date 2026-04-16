@@ -16,9 +16,6 @@ SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__
 Image.MAX_IMAGE_PIXELS = 9331200000
 
 pdfmetrics.registerFont(TTFont("header", "FiraSans-Black.ttf"))
-pdfmetrics.registerFont(TTFont("hour", "FiraSans-Bold.ttf"))
-pdfmetrics.registerFont(TTFont("add", "FiraSans-Regular.ttf"))
-pdfmetrics.registerFont(TTFont("foot", "FiraSans-Thin.ttf"))
 
 
 def argparser() -> argparse.Namespace:

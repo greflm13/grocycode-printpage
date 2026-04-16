@@ -12,6 +12,14 @@
                 "envManager": "ms-python.python:pyenv",
                 "packageManager": "ms-python.python:pip"
             }
+        ],
+        "json.schemas": [
+            {
+                "fileMatch": [
+                    "*.json"
+                ],
+                "url": "./layout.schema.json"
+            }
         ]
     }
 }
