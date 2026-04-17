@@ -1,6 +1,5 @@
 #!/bin/env python
 import os
-import io
 import re
 import json
 import argparse
@@ -8,16 +7,13 @@ import urllib.parse
 
 import requests
 
-from PIL import Image
 from pylibdmtx.pylibdmtx import encode
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors, pagesizes
 from reportlab.pdfbase.ttfonts import TTFont
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
-Image.MAX_IMAGE_PIXELS = 9331200000
 
 COLS = 5
 CELL_WIDTH = 400
@@ -32,6 +28,37 @@ BASE_URL_RE = re.compile(r"^https?:\/\/((([A-Za-z0-9-]+\.)+[A-Za-z]{2,})|localho
 JSON_FILE_RE = re.compile(r"^(?:\.{0,2}\/|\/)?(?:[^\/\0]+\/)*[^\/\0]+\.json$", re.VERBOSE)
 
 pdfmetrics.registerFont(TTFont("header", "FiraSans-Black.ttf"))
+
+
+def datamatrix_to_bool_matrix(encoded) -> list:
+    w, h = encoded.width, encoded.height
+    pixels = encoded.pixels
+
+    matrix = [[False] * w for _ in range(h)]
+    idx = 0
+
+    for y in range(h):
+        for x in range(w):
+            r = pixels[idx]
+            matrix[y][x] = r < 128
+            idx += 3
+
+    return matrix
+
+
+def draw_datamatrix_vector(pdf, matrix, x, y, size) -> None:
+    rows = len(matrix)
+    cols = len(matrix[0])
+
+    module = size / max(rows, cols)
+
+    pdf.setFillColor(colors.black)
+    pdf.setStrokeColor(colors.black)
+
+    for row in range(rows):
+        for col in range(cols):
+            if matrix[row][col]:
+                pdf.rect(x + col * module, y + (rows - row - 1) * module, module, module, stroke=0, fill=1)
 
 
 def query(string: str) -> str:
@@ -112,10 +139,8 @@ def main() -> None:
     scale_y = pagesize[1] / 2970
     pdf.scale(scale_x, scale_y)
 
-    black = colors.HexColor("#000000")
-
     pdf.setFont("header", 24)
-    pdf.setFillColor(black)
+    pdf.setFillColor(colors.black)
 
     typ, location = args.layout
 
@@ -139,7 +164,7 @@ def main() -> None:
         pdf.showPage()
         pdf.scale(scale_x, scale_y)
         pdf.setFont("header", 24)
-        pdf.setFillColor(black)
+        pdf.setFillColor(colors.black)
 
     row = 0
 
@@ -162,15 +187,8 @@ def main() -> None:
         pdf.drawCentredString(x=x_text, y=y, text=product["name"])
 
         encoded = encode(f"grcy:p:{product['id']}".encode("utf-8"))
-        img = Image.frombytes("RGB", (encoded.width, encoded.height), encoded.pixels)
-        resized = img.resize((900, 900), resample=Image.Resampling.NEAREST)
-
-        buffer = io.BytesIO()
-        resized.save(buffer, format="PNG")
-        buffer.seek(0)
-
-        image = ImageReader(buffer)
-        pdf.drawImage(image, x=x_img, y=y + 20, width=200, height=200)
+        matrix = datamatrix_to_bool_matrix(encoded)
+        draw_datamatrix_vector(pdf, matrix, x=x_img, y=y + 20, size=200)
 
     pdf.save()
 
