@@ -70,7 +70,7 @@ def check_or_load_login() -> str:
         if persist.lower() in {"yes", "y", "ye", "j", "ja"}:
             with open(file, "w") as login_file:
                 json.dump(login_dict, login_file)
-            print("Your password has been saved to <" + str(file) + ">, to renew it please delete the file\n")
+            print("Your api key has been saved to <" + str(file) + ">, to renew it please delete the file\n")
 
     else:
         with open(file, "r") as login_file:
@@ -99,7 +99,8 @@ def main() -> None:
 
     pdf.setFont("header", 48)
     pdf.setFillColor(colors.black)
-    pdf.drawCentredString(x=2100 / 2, y=2870, text=args.product_name)
+    pdf.drawCentredString(x=2100 / 2, y=2880, text=args.product_name)
+    pdf.setTitle(args.product_name)
 
     typ, value = args.product_id
     if typ == "id":
@@ -124,7 +125,7 @@ def main() -> None:
     for i in range(10):
         for j in range(27):
             pdf.saveState()
-            pdf.translate(85 + i * 203.25, 135 + j * 100)
+            pdf.translate(90 + i * 203.25, 125 + j * 100)
             pdf.doForm("dm")
             pdf.restoreState()
 

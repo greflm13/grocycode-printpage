@@ -106,7 +106,7 @@ def check_or_load_login() -> str:
         if persist.lower() in {"yes", "y", "ye", "j", "ja"}:
             with open(file, "w") as login_file:
                 json.dump(login_dict, login_file)
-            print("Your password has been saved to <" + str(file) + ">, to renew it please delete the file\n")
+            print("Your api key has been saved to <" + str(file) + ">, to renew it please delete the file\n")
 
     else:
         with open(file, "r") as login_file:
