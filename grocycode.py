@@ -44,9 +44,10 @@ def main() -> None:
 
     encoded = encode(f"grcy:p:{args.product_id}".encode("utf-8"))
     img = Image.frombytes("RGB", (encoded.width, encoded.height), encoded.pixels)
+    resized = img.resize((900, 900), resample=Image.Resampling.NEAREST)
 
     buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
+    resized.save(buffer, format="PNG")
     buffer.seek(0)
 
     image = ImageReader(buffer)

@@ -1,9 +1,12 @@
 #!/bin/env python
 import os
 import io
+import re
 import json
 import argparse
+import urllib.parse
 
+import requests
 
 from PIL import Image
 from pylibdmtx.pylibdmtx import encode
@@ -25,12 +28,76 @@ START_Y = 100
 BLOCK_HEIGHT = CELL_HEIGHT
 PAGE_HEIGHT = 2970
 
+BASE_URL_RE = re.compile(r"^https?:\/\/((([A-Za-z0-9-]+\.)+[A-Za-z]{2,})|localhost|(\d{1,3}\.){3}\d{1,3})(:\d+)?$")
+JSON_FILE_RE = re.compile(r"^(?:\.{0,2}\/|\/)?(?:[^\/\0]+\/)*[^\/\0]+\.json$", re.VERBOSE)
+
 pdfmetrics.registerFont(TTFont("header", "FiraSans-Black.ttf"))
+
+
+def query(string: str) -> str:
+    operators = ["!=", "!~", "<=", ">=", "=", "<", ">", "~", "§"]
+
+    op_pattern = "|".join(map(re.escape, operators))
+
+    pattern = re.compile(
+        rf"""
+        ^(?P<field>[A-Za-z_][A-Za-z0-9_]*)
+        (?P<operator>{op_pattern})
+        (?P<value>.+)$
+        """,
+        re.VERBOSE,
+    )
+
+    match = pattern.match(string)
+    if not match:
+        raise argparse.ArgumentTypeError("Expected <field><condition><value>")
+
+    value = match.group("value")
+    if not value:
+        raise argparse.ArgumentTypeError("Value must not be empty")
+
+    return f"{match.group('field')}{match.group('operator')}{value}"
+
+
+def base_url_or_json_type(value: str) -> tuple[str, str]:
+    if BASE_URL_RE.match(value):
+        return ("url", value)
+
+    if JSON_FILE_RE.match(value):
+        return ("file", value)
+
+    raise argparse.ArgumentTypeError("Must be either a base URL (http[s]://host[:port]) or a local .json file path")
+
+
+def check_or_load_login() -> str:
+    file = os.path.join(SCRIPTDIR, ".api_key")
+    if not os.path.exists(file):
+        api_key = input("Your api key: ")
+        login_dict = {"api_key": api_key}
+
+        persist = input("Do you want to save your api key to a hidden file?: [y/n] ")
+        if persist.lower() in {"yes", "y", "ye", "j", "ja"}:
+            with open(file, "w") as login_file:
+                json.dump(login_dict, login_file)
+            print("Your password has been saved to <" + str(file) + ">, to renew it please delete the file\n")
+
+    else:
+        with open(file, "r") as login_file:
+            login_dict = json.load(login_file)
+            api_key = login_dict["api_key"]
+    return api_key
 
 
 def argparser() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="create printable pdf of grocycodes in grid")
-    parser.add_argument("layout", help="layout json", type=str)
+    parser.add_argument("layout", help="layout json OR server url", type=base_url_or_json_type)
+    parser.add_argument(
+        "--query",
+        help="An array of filter conditions, each of them is a string in the form of <field><condition><value>",
+        nargs="+",
+        action="append",
+        type=query,
+    )
     parser.add_argument("-o", "--output", help="output directory (default 'output')", type=str, default="output")
     return parser.parse_args()
 
@@ -50,8 +117,23 @@ def main() -> None:
     pdf.setFont("header", 24)
     pdf.setFillColor(black)
 
-    with open(args.layout, "r") as f:
-        layout = json.loads(f.read())
+    typ, location = args.layout
+
+    if typ == "file":
+        with open(location, "r") as f:
+            layout = json.loads(f.read())
+    elif typ == "url":
+        api_key = check_or_load_login()
+        if args.query is not None:
+            queries = [urllib.parse.quote(item) for group in args.query for item in group]
+            url = f"{location}/api/objects/products?query%5B%5D={'&query%5B%5D='.join(queries)}"
+        else:
+            url = f"{location}/api/objects/products"
+        res = requests.get(
+            url=url,
+            headers={"accept": "application/json", "GROCY-API-KEY": api_key},
+        )
+        layout = res.json()
 
     def start_new_page(pdf):
         pdf.showPage()
@@ -81,9 +163,10 @@ def main() -> None:
 
         encoded = encode(f"grcy:p:{product['id']}".encode("utf-8"))
         img = Image.frombytes("RGB", (encoded.width, encoded.height), encoded.pixels)
+        resized = img.resize((900, 900), resample=Image.Resampling.NEAREST)
 
         buffer = io.BytesIO()
-        img.save(buffer, format="PNG")
+        resized.save(buffer, format="PNG")
         buffer.seek(0)
 
         image = ImageReader(buffer)
