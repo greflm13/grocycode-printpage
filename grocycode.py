@@ -35,7 +35,7 @@ def base_url_or_int_type(value: str) -> tuple[str, str]:
 
 def argparser() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="create printable pdf of grocycode")
-    parser.add_argument("product_id", help="product id for the code", type=base_url_or_int_type)
+    parser.add_argument("product_id", help="product id OR server url for the code", type=base_url_or_int_type)
     parser.add_argument("product_name", help="product name for the code", type=str)
     parser.add_argument("-o", "--output", help="output directory (default 'output')", type=str, default="output")
     return parser.parse_args()
