@@ -13,6 +13,15 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib import colors, pagesizes
 from reportlab.pdfbase.ttfonts import TTFont
 
+from modules.utils import (
+    QUERY_RE,
+    BASE_URL_RE,
+    JSON_FILE_RE,
+    datamatrix_to_bool_matrix,
+    draw_datamatrix_vector,
+    check_or_load_login,
+)
+
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 
 COLS = 5
@@ -24,58 +33,12 @@ START_Y = 100
 BLOCK_HEIGHT = CELL_HEIGHT
 PAGE_HEIGHT = 2970
 
-BASE_URL_RE = re.compile(r"^https?:\/\/((([A-Za-z0-9-]+\.)+[A-Za-z]{2,})|localhost|(\d{1,3}\.){3}\d{1,3})(:\d+)?$")
-JSON_FILE_RE = re.compile(r"^(?:\.{0,2}\/|\/)?(?:[^\/\0]+\/)*[^\/\0]+\.json$", re.VERBOSE)
 
 pdfmetrics.registerFont(TTFont("header", "FiraSans-Black.ttf"))
 
 
-def datamatrix_to_bool_matrix(encoded) -> list:
-    w, h = encoded.width, encoded.height
-    pixels = encoded.pixels
-
-    matrix = [[False] * w for _ in range(h)]
-    idx = 0
-
-    for y in range(h):
-        for x in range(w):
-            r = pixels[idx]
-            matrix[y][x] = r < 128
-            idx += 3
-
-    return matrix
-
-
-def draw_datamatrix_vector(pdf, matrix, x, y, size) -> None:
-    rows = len(matrix)
-    cols = len(matrix[0])
-
-    module = size / max(rows, cols)
-
-    pdf.setFillColor(colors.black)
-    pdf.setStrokeColor(colors.black)
-
-    for row in range(rows):
-        for col in range(cols):
-            if matrix[row][col]:
-                pdf.rect(x + col * module, y + (rows - row - 1) * module, module, module, stroke=0, fill=1)
-
-
 def query(string: str) -> str:
-    operators = ["!=", "!~", "<=", ">=", "=", "<", ">", "~", "§"]
-
-    op_pattern = "|".join(map(re.escape, operators))
-
-    pattern = re.compile(
-        rf"""
-        ^(?P<field>[A-Za-z_][A-Za-z0-9_]*)
-        (?P<operator>{op_pattern})
-        (?P<value>.+)$
-        """,
-        re.VERBOSE,
-    )
-
-    match = pattern.match(string)
+    match = QUERY_RE.match(string)
     if not match:
         raise argparse.ArgumentTypeError("Expected <field><condition><value>")
 
@@ -94,25 +57,6 @@ def base_url_or_json_type(value: str) -> tuple[str, str]:
         return ("file", value)
 
     raise argparse.ArgumentTypeError("Must be either a base URL (http[s]://host[:port]) or a local .json file path")
-
-
-def check_or_load_login() -> str:
-    file = os.path.join(SCRIPTDIR, ".api_key")
-    if not os.path.exists(file):
-        api_key = input("Your api key: ")
-        login_dict = {"api_key": api_key}
-
-        persist = input("Do you want to save your api key to a hidden file?: [y/n] ")
-        if persist.lower() in {"yes", "y", "ye", "j", "ja"}:
-            with open(file, "w") as login_file:
-                json.dump(login_dict, login_file)
-            print("Your api key has been saved to <" + str(file) + ">, to renew it please delete the file\n")
-
-    else:
-        with open(file, "r") as login_file:
-            login_dict = json.load(login_file)
-            api_key = login_dict["api_key"]
-    return api_key
 
 
 def argparser() -> argparse.Namespace:
