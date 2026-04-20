@@ -1,6 +1,5 @@
 #!/bin/env python
 import os
-import re
 import json
 import argparse
 import urllib.parse
