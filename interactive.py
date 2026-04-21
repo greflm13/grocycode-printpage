@@ -59,7 +59,7 @@ def lost(url: str, api_key: str, products: list[dict]):
                 url=f"{url}/api/objects/{MAPPINGS[filt]}",
                 headers={"accept": "application/json", "GROCY-API-KEY": api_key},
             )
-            possible[filt] = res.json()
+            possible[filt] = sorted(res.json(), key=lambda x: x["name"])
         choices = [
             {
                 "type": "select",
@@ -75,7 +75,7 @@ def lost(url: str, api_key: str, products: list[dict]):
             f"{url}/api/objects/products?query%5B%5D={'&query%5B%5D='.join(queries)}",
             headers={"accept": "application/json", "GROCY-API-KEY": api_key},
         )
-        products = res.json()
+        products = sorted(res.json(), key=lambda x: x["name"])
     choices = [questionary.Choice(item["name"], idx) for idx, item in enumerate(products)]
     selected = questionary.checkbox("Products:", choices).ask()
     prods = []
@@ -89,7 +89,7 @@ def main() -> None:
     api_key, url = check_or_load_login()
     typ = questionary.select("Which type of pdf do you want to generate?", ["stickers", "list"]).ask()
     res = requests.get(url + "/api/objects/products", headers={"accept": "application/json", "GROCY-API-KEY": api_key})
-    products = res.json()
+    products = sorted(res.json(), key=lambda x: x["name"])
     if typ is None:
         return
     if typ == "stickers":
