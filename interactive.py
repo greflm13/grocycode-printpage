@@ -5,7 +5,7 @@ import urllib
 import requests
 import questionary
 
-from modules.utils import check_or_load_login, get_bool_matrix, draw_datamatrix_vector
+from modules.utils import check_or_load_login, get_bool_matrix
 from grocycode import create_codepage
 from codesheet import create_codesheet
 
@@ -13,26 +13,43 @@ SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__
 OUTDIR = os.path.join(SCRIPTDIR, "output")
 STYLE = questionary.Style(
     [
-        ("question", "fg:#ff0000 bold"),
-        ("answer", "fg:#00ff00 bold"),
-        ("pointer", "fg:#0000ff bold"),
-        ("highlighted", "fg:#ffff00 bold"),
-        ("completion-menu", "bg:#000000"),
-        ("completion-menu.completion.current", "bg:#444444"),
+        ("question", "fg:#6fd80d bold"),
+        ("answer", "fg:#f6f6f6"),
+        ("instruction", "fg:#d7dae0"),
+        ("text", "fg:#f6f6f6"),
+        ("disabled", "fg:#d7dae0"),
+        ("pointer", "fg:#528bff bold"),
+        ("cursor", "fg:#16171d bg:#528bff"),
+        ("cursor-line", "bg:#1e2029"),
+        ("highlighted", "fg:#ffd945 bold"),
+        ("selected", "fg:#ffd945"),
+        ("selected-focused", "fg:#ffd945 bold"),
+        ("checkbox", "fg:#d7dae0"),
+        ("checkbox-selected", "fg:#6fd80d bold"),
+        ("radiolist", "fg:#d7dae0"),
+        ("radiolist-selected", "fg:#6fd80d bold"),
+        ("completion-menu", "bg:#16171d fg:#d7dae0"),
+        ("completion-menu.completion", "bg:#16171d fg:#d7dae0"),
+        ("completion-menu.completion.current", "bg:#528bff fg:#16171d bold"),
+        ("error", "fg:#ff3f4f bold"),
+        ("warning", "fg:#ffd945"),
+        ("hint", "fg:#19d1e5"),
+        ("separator", "fg:#d7dae0"),
+        ("frame.border", "fg:#528bff"),
     ]
 )
+
 MAPPINGS = {
     "product_group_id": "product_groups",
     "location_id": "locations",
     "parent_product_id": "products",
     "shopping_location_id": "shopping_locations",
-    "should_not_be_frozen": "products",
 }
 
 
 def stickers(url: str, api_key: str, products: list[dict]):
     choices = [item["name"] for item in products]
-    product_name = questionary.autocomplete("Product", choices).ask()
+    product_name = questionary.autocomplete("Product", choices, style=STYLE).ask()
     if product_name is None:
         return
 
@@ -49,10 +66,10 @@ def stickers(url: str, api_key: str, products: list[dict]):
 
 
 def lost(url: str, api_key: str, products: list[dict]):
-    filte = questionary.confirm("Filter list?", False).ask()
+    filte = questionary.confirm("Filter list?", False, style=STYLE).ask()
     if filte:
         choices = [questionary.Choice(item) for item in MAPPINGS.keys()]
-        filters = questionary.checkbox("Which filters?", choices).ask()
+        filters = questionary.checkbox("Which filters?", choices, style=STYLE).ask()
         possible = {}
         for filt in filters:
             res = requests.get(
@@ -65,6 +82,7 @@ def lost(url: str, api_key: str, products: list[dict]):
                 "type": "select",
                 "name": item,
                 "message": f"Filter for {item}:",
+                "style": STYLE,
                 "choices": [questionary.Choice(value["name"], value["id"]) for value in values],
             }
             for item, values in possible.items()
@@ -77,7 +95,7 @@ def lost(url: str, api_key: str, products: list[dict]):
         )
         products = sorted(res.json(), key=lambda x: x["name"])
     choices = [questionary.Choice(item["name"], idx) for idx, item in enumerate(products)]
-    selected = questionary.checkbox("Products:", choices).ask()
+    selected = questionary.checkbox("Products:", choices, style=STYLE).ask()
     prods = []
     for idx in selected:
         prods.append(products[idx])
@@ -87,7 +105,7 @@ def lost(url: str, api_key: str, products: list[dict]):
 def main() -> None:
     os.makedirs(OUTDIR, exist_ok=True)
     api_key, url = check_or_load_login()
-    typ = questionary.select("Which type of pdf do you want to generate?", ["stickers", "list"]).ask()
+    typ = questionary.select("Which type of pdf do you want to generate?", ["stickers", "list"], style=STYLE).ask()
     res = requests.get(url + "/api/objects/products", headers={"accept": "application/json", "GROCY-API-KEY": api_key})
     products = sorted(res.json(), key=lambda x: x["name"])
     if typ is None:
