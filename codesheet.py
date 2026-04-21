@@ -6,7 +6,6 @@ import urllib.parse
 
 import requests
 
-from pylibdmtx.pylibdmtx import encode
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib import colors, pagesizes
@@ -16,24 +15,58 @@ from modules.utils import (
     QUERY_RE,
     BASE_URL_RE,
     JSON_FILE_RE,
-    datamatrix_to_bool_matrix,
+    get_bool_matrix,
     draw_datamatrix_vector,
     check_or_load_login,
+    PageLayout,
 )
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 
-COLS = 5
-CELL_WIDTH = 400
-CELL_HEIGHT = 315
-START_X_TEXT = 250
-START_X_IMG = 150
-START_Y = 100
-BLOCK_HEIGHT = CELL_HEIGHT
-PAGE_HEIGHT = 2970
-
-
 pdfmetrics.registerFont(TTFont("header", "FiraSans-Black.ttf"))
+
+
+def create_codesheet(layout: list[dict], filename: str) -> None:
+    pagesize = pagesizes.portrait(pagesizes.A4)
+    pdf = Canvas(filename, pagesize=pagesize)
+
+    scale_x = pagesize[0] / PageLayout.PAGE_WIDTH.value
+    scale_y = pagesize[1] / PageLayout.PAGE_HEIGHT.value
+    pdf.scale(scale_x, scale_y)
+
+    pdf.setFont("header", 24)
+    pdf.setFillColor(colors.black)
+
+    def start_new_page(pdf):
+        pdf.showPage()
+        pdf.scale(scale_x, scale_y)
+        pdf.setFont("header", 24)
+        pdf.setFillColor(colors.black)
+
+    row = 0
+
+    for idx, product in enumerate(layout):
+        col = idx % PageLayout.COLS.value
+
+        if col == 0 and idx != 0:
+            row += 1
+
+        y = PageLayout.START_Y.value + row * PageLayout.BLOCK_HEIGHT.value
+
+        if y + PageLayout.BLOCK_HEIGHT.value > PageLayout.PAGE_HEIGHT.value:
+            start_new_page(pdf)
+            row = 0
+            y = PageLayout.START_Y.value
+
+        x_text = PageLayout.START_X_TEXT.value + col * PageLayout.CELL_WIDTH.value
+        x_img = PageLayout.START_X_IMG.value + col * PageLayout.CELL_WIDTH.value
+
+        pdf.drawCentredString(x=x_text, y=y, text=product["name"])
+
+        matrix = get_bool_matrix(product["id"])
+        draw_datamatrix_vector(pdf, matrix, x=x_img, y=y + 20, size=200)
+
+    pdf.save()
 
 
 def query(string: str) -> str:
@@ -75,15 +108,6 @@ def argparser() -> argparse.Namespace:
 def main() -> None:
     args = argparser()
     os.makedirs(args.output, exist_ok=True)
-    pagesize = pagesizes.portrait(pagesizes.A4)
-    pdf = Canvas(os.path.join(args.output, "codesheet.pdf"), pagesize=pagesize)
-
-    scale_x = pagesize[0] / 2100
-    scale_y = pagesize[1] / 2970
-    pdf.scale(scale_x, scale_y)
-
-    pdf.setFont("header", 24)
-    pdf.setFillColor(colors.black)
 
     typ, location = args.layout
 
@@ -91,7 +115,7 @@ def main() -> None:
         with open(location, "r") as f:
             layout = json.loads(f.read())
     elif typ == "url":
-        api_key = check_or_load_login()
+        api_key, _ = check_or_load_login()
         if args.query is not None:
             queries = [urllib.parse.quote(item) for group in args.query for item in group]
             url = f"{location}/api/objects/products?query%5B%5D={'&query%5B%5D='.join(queries)}"
@@ -103,37 +127,7 @@ def main() -> None:
         )
         layout = res.json()
 
-    def start_new_page(pdf):
-        pdf.showPage()
-        pdf.scale(scale_x, scale_y)
-        pdf.setFont("header", 24)
-        pdf.setFillColor(colors.black)
-
-    row = 0
-
-    for idx, product in enumerate(layout):
-        col = idx % COLS
-
-        if col == 0 and idx != 0:
-            row += 1
-
-        y = START_Y + row * BLOCK_HEIGHT
-
-        if y + BLOCK_HEIGHT > PAGE_HEIGHT:
-            start_new_page(pdf)
-            row = 0
-            y = START_Y
-
-        x_text = START_X_TEXT + col * CELL_WIDTH
-        x_img = START_X_IMG + col * CELL_WIDTH
-
-        pdf.drawCentredString(x=x_text, y=y, text=product["name"])
-
-        encoded = encode(f"grcy:p:{product['id']}".encode("utf-8"))
-        matrix = datamatrix_to_bool_matrix(encoded)
-        draw_datamatrix_vector(pdf, matrix, x=x_img, y=y + 20, size=200)
-
-    pdf.save()
+    create_codesheet(layout, args.output)
 
 
 if __name__ == "__main__":
