@@ -15,7 +15,12 @@ def main() -> None:
 
     for barcode in barcodes:
         if barcode["amount"] is not None:
-            print(f"removing barcode amount from product {barcode['product_id']} barcode {barcode['barcode']}")
+            res = requests.get(
+                url + f"/api/objects/products/{barcode['product_id']}",
+                headers={"accept": "application/json", "GROCY-API-KEY": ipa_kye},
+            )
+            product = res.json()
+            print(f"removing barcode amount from product \"{product['name']}\" barcode {barcode['barcode']}")
             res = requests.put(
                 url + f"/api/objects/product_barcodes/{barcode['id']}",
                 headers={"accept": "application/json", "GROCY-API-KEY": ipa_kye, "Content-Type": "application/json"},
