@@ -2,7 +2,7 @@
 
 import os
 import sys
-import urllib.parse
+
 import requests
 
 from PySide6.QtCore import Qt
@@ -21,11 +21,9 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # --- UI setup ---
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        # --- Login / API init (same as main()) ---
         os.makedirs(OUTDIR, exist_ok=True)
         self.api_key, self.url = check_or_load_login()
         self.headers = {
@@ -33,24 +31,18 @@ class MainWindow(QMainWindow):
             "GROCY-API-KEY": self.api_key,
         }
 
-        # --- Load products (same as main()) ---
         res = requests.get(
             self.url + "/api/objects/products",
             headers=self.headers,
         )
         self.products = sorted(res.json(), key=lambda x: x["name"])
 
-        # --- UI population ---
         self._init_type_selection()
         self._init_stickers_page()
         self._init_list_page()
 
-        # default view
         self.ui.flowStack.setCurrentIndex(0)
 
-    # ------------------------------------------------------------------
-    # TYPE SELECTION (questionary.select in main())
-    # ------------------------------------------------------------------
     def _init_type_selection(self):
         self.ui.typeCombo.currentTextChanged.connect(self._on_type_changed)
 
@@ -60,9 +52,6 @@ class MainWindow(QMainWindow):
         elif text == "list":
             self.ui.flowStack.setCurrentWidget(self.ui.listPage)
 
-    # ------------------------------------------------------------------
-    # STICKERS FLOW (stickers())
-    # ------------------------------------------------------------------
     def _init_stickers_page(self):
         combo = self.ui.productCombo
         combo.setEditable(True)
@@ -105,14 +94,10 @@ class MainWindow(QMainWindow):
             "Stickers PDF generated successfully.",
         )
 
-    # ------------------------------------------------------------------
-    # LIST FLOW (lost())
-    # ------------------------------------------------------------------
     def _init_list_page(self):
         # filter confirm
         self.ui.filterCheck.toggled.connect(self.ui.filterGroup.setVisible)
 
-        # which filters?
         for key in MAPPINGS.keys():
             QListWidgetItem(key, self.ui.filterList)
 
@@ -120,13 +105,11 @@ class MainWindow(QMainWindow):
 
         self.ui.generateListButton.clicked.connect(self._generate_list)
 
-        # data cache
         self.filtered_products = []
 
     def _update_filter_value_inputs(self):
         layout = self.ui.filterValuesLayout
 
-        # clear previous inputs
         while layout.count():
             item = layout.takeAt(0)
             if item.widget():
@@ -145,7 +128,6 @@ class MainWindow(QMainWindow):
             combo = self._create_combo(objects)
             layout.addRow(f"{filt}:", combo)
 
-        # reload products after redefining filters
         self._reload_products()
 
     def _create_combo(self, objects):
@@ -165,7 +147,6 @@ class MainWindow(QMainWindow):
             label_item = layout.itemAt(row, QFormLayout.ItemRole.LabelRole)
             field_item = layout.itemAt(row, QFormLayout.ItemRole.FieldRole)
 
-            # CRITICAL guard (Qt emits early)
             if not label_item or not field_item:
                 continue
 
@@ -174,13 +155,11 @@ class MainWindow(QMainWindow):
             combo = field_item.widget()
             value = combo.currentData()
 
-            # ignore incomplete selections
             if value is None:
                 return
 
             queries.append(f"{label}={value}")
 
-        # No filters → behave exactly like Questionary
         if not queries:
             self.filtered_products = self.products
             self._populate_product_list()
@@ -194,7 +173,6 @@ class MainWindow(QMainWindow):
 
         data = res.json()
 
-        # CRITICAL validation (Grocy may return dict/string)
         if not isinstance(data, list):
             self.filtered_products = []
             self._populate_product_list()
