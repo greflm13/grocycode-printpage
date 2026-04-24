@@ -15,6 +15,14 @@ JSON_FILE_RE = re.compile(r"^(?:\.{0,2}\/|\/)?(?:[^\/\0]+\/)*[^\/\0]+\.json$", r
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 
 
+MAPPINGS = {
+    "product_group_id": "product_groups",
+    "location_id": "locations",
+    "parent_product_id": "products",
+    "shopping_location_id": "shopping_locations",
+}
+
+
 class PageLayout(Enum):
     COLS = 5
     CELL_WIDTH = 400

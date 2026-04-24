@@ -5,7 +5,7 @@ import urllib
 import requests
 import questionary
 
-from modules.utils import check_or_load_login, get_bool_matrix
+from modules.utils import check_or_load_login, get_bool_matrix, MAPPINGS
 from grocycode import create_codepage
 from codesheet import create_codesheet
 
@@ -38,13 +38,6 @@ STYLE = questionary.Style(
         ("warning", "fg:#ffd945"),
     ]
 )
-
-MAPPINGS = {
-    "product_group_id": "product_groups",
-    "location_id": "locations",
-    "parent_product_id": "products",
-    "shopping_location_id": "shopping_locations",
-}
 
 
 def stickers(url: str, api_key: str, products: list[dict]):
