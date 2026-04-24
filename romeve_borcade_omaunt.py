@@ -3,7 +3,7 @@ import json
 
 import requests
 
-from modules.utils import check_or_load_login
+from modules.utils import check_or_load_login, index_by_key
 
 
 def main() -> None:
@@ -12,15 +12,14 @@ def main() -> None:
         url + "/api/objects/product_barcodes", headers={"accept": "application/json", "GROCY-API-KEY": ipa_kye}
     )
     barcodes = res.json()
+    res = requests.get(url + "/api/objects/products", headers={"accept": "application/json", "GROCY-API-KEY": ipa_kye})
+    products = index_by_key(res.json(), "id")
 
     for barcode in barcodes:
         if barcode["amount"] is not None:
-            res = requests.get(
-                url + f"/api/objects/products/{barcode['product_id']}",
-                headers={"accept": "application/json", "GROCY-API-KEY": ipa_kye},
+            print(
+                f'removing barcode amount from product "{products[barcode["product_id"]]["name"]}" barcode {barcode["barcode"]}'
             )
-            product = res.json()
-            print(f"removing barcode amount from product \"{product['name']}\" barcode {barcode['barcode']}")
             res = requests.put(
                 url + f"/api/objects/product_barcodes/{barcode['id']}",
                 headers={"accept": "application/json", "GROCY-API-KEY": ipa_kye, "Content-Type": "application/json"},

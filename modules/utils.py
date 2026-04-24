@@ -59,6 +59,13 @@ def draw_datamatrix_vector(pdf, matrix, x, y, size) -> None:
                 pdf.rect(x + col * module, y + (rows - row - 1) * module, module, module, stroke=0, fill=1)
 
 
+def index_by_key(lst: list[dict], key: str) -> dict:
+    dic = {}
+    for item in lst:
+        dic[item.get(key)] = item
+    return dic
+
+
 def check_or_load_login() -> tuple[str, str]:
     file = os.path.join(SCRIPTDIR, ".api_key")
     if not os.path.exists(file):
