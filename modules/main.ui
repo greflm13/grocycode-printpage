@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>368</width>
-    <height>385</height>
+    <height>622</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,7 +22,7 @@
       </property>
       <layout class="QHBoxLayout">
        <item>
-        <widget class="QLabel" name="label">
+        <widget class="QLabel" name="label0">
          <property name="text">
           <string>Which type of pdf do you want to generate?</string>
          </property>
@@ -48,12 +48,12 @@
     <item>
      <widget class="QStackedWidget" name="flowStack">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="stickersPage">
        <layout class="QVBoxLayout">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label1">
           <property name="text">
            <string>Product</string>
           </property>
@@ -63,13 +63,6 @@
          <widget class="QComboBox" name="productCombo">
           <property name="editable">
            <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="generateStickersButton">
-          <property name="text">
-           <string>Generate Stickers PDF</string>
           </property>
          </widget>
         </item>
@@ -85,6 +78,13 @@
            </size>
           </property>
          </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="generateStickersButton">
+          <property name="text">
+           <string>Generate Stickers PDF</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -107,7 +107,7 @@
           </property>
           <layout class="QVBoxLayout">
            <item>
-            <widget class="QLabel" name="label">
+            <widget class="QLabel" name="label2">
              <property name="text">
               <string>Which filters?</string>
              </property>
@@ -132,7 +132,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label3">
           <property name="text">
            <string>Products</string>
           </property>

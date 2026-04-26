@@ -66,33 +66,18 @@ class MainWindow(QMainWindow):
             return
 
         res = requests.get(
-            f"{self.url}/api/objects/products",
-            params={"query[]": f"name={product_name}"},
-            headers=self.headers,
+            f"{self.url}/api/objects/products", params={"query[]": f"name={product_name}"}, headers=self.headers
         )
 
         try:
             product_id = res.json()[0]["id"]
         except (IndexError, KeyError):
-            QMessageBox.critical(
-                self,
-                "Error",
-                f"Product not found: {product_name}",
-            )
+            QMessageBox.critical(self, "Error", f"Product not found: {product_name}")
             return
 
         matrix = get_bool_matrix(product_id)
-        create_codepage(
-            matrix,
-            os.path.join(OUTDIR, product_name + ".pdf"),
-            product_name,
-        )
-
-        QMessageBox.information(
-            self,
-            "Done",
-            "Stickers PDF generated successfully.",
-        )
+        create_codepage(matrix, os.path.join(OUTDIR, product_name + ".pdf"), product_name)
+        QMessageBox.information(self, "Done", "Stickers PDF generated successfully.")
 
     def _init_list_page(self):
         # filter confirm
@@ -102,9 +87,7 @@ class MainWindow(QMainWindow):
             QListWidgetItem(key, self.ui.filterList)
 
         self.ui.filterList.itemSelectionChanged.connect(self._update_filter_value_inputs)
-
         self.ui.generateListButton.clicked.connect(self._generate_list)
-
         self.filtered_products = []
 
     def _update_filter_value_inputs(self):
@@ -118,10 +101,7 @@ class MainWindow(QMainWindow):
         for item in self.ui.filterList.selectedItems():
             filt = item.text()
 
-            res = requests.get(
-                f"{self.url}/api/objects/{MAPPINGS[filt]}",
-                headers=self.headers,
-            )
+            res = requests.get(f"{self.url}/api/objects/{MAPPINGS[filt]}", headers=self.headers)
 
             objects = sorted(res.json(), key=lambda x: x["name"])
 
@@ -166,9 +146,7 @@ class MainWindow(QMainWindow):
             return
 
         res = requests.get(
-            f"{self.url}/api/objects/products",
-            params=[("query[]", q) for q in queries],
-            headers=self.headers,
+            f"{self.url}/api/objects/products", params=[("query[]", q) for q in queries], headers=self.headers
         )
 
         data = res.json()
@@ -200,16 +178,8 @@ class MainWindow(QMainWindow):
         if not selected:
             return
 
-        create_codesheet(
-            selected,
-            os.path.join(OUTDIR, "codesheet.pdf"),
-        )
-
-        QMessageBox.information(
-            self,
-            "Done",
-            "Codesheet PDF generated successfully.",
-        )
+        create_codesheet(selected, os.path.join(OUTDIR, "codesheet.pdf"))
+        QMessageBox.information(self, "Done", "Codesheet PDF generated successfully.")
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(368, 385)
+        MainWindow.resize(368, 622)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.mainLayout = QVBoxLayout(self.centralwidget)
@@ -34,10 +34,10 @@ class Ui_MainWindow(object):
         self.typeGroup.setObjectName(u"typeGroup")
         self.hboxLayout = QHBoxLayout(self.typeGroup)
         self.hboxLayout.setObjectName(u"hboxLayout")
-        self.label = QLabel(self.typeGroup)
-        self.label.setObjectName(u"label")
+        self.label0 = QLabel(self.typeGroup)
+        self.label0.setObjectName(u"label0")
 
-        self.hboxLayout.addWidget(self.label)
+        self.hboxLayout.addWidget(self.label0)
 
         self.typeCombo = QComboBox(self.typeGroup)
         self.typeCombo.addItem("")
@@ -66,14 +66,14 @@ class Ui_MainWindow(object):
 
         self.vboxLayout.addWidget(self.productCombo)
 
+        self.spacerItem = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.vboxLayout.addItem(self.spacerItem)
+
         self.generateStickersButton = QPushButton(self.stickersPage)
         self.generateStickersButton.setObjectName(u"generateStickersButton")
 
         self.vboxLayout.addWidget(self.generateStickersButton)
-
-        self.spacerItem = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        self.vboxLayout.addItem(self.spacerItem)
 
         self.flowStack.addWidget(self.stickersPage)
         self.listPage = QWidget()
@@ -135,7 +135,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.flowStack.setCurrentIndex(1)
+        self.flowStack.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -144,7 +144,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"PDF Generator", None))
         self.typeGroup.setTitle(QCoreApplication.translate("MainWindow", u"PDF Type", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Which type of pdf do you want to generate?", None))
+        self.label0.setText(QCoreApplication.translate("MainWindow", u"Which type of pdf do you want to generate?", None))
         self.typeCombo.setItemText(0, QCoreApplication.translate("MainWindow", u"stickers", None))
         self.typeCombo.setItemText(1, QCoreApplication.translate("MainWindow", u"list", None))
 
