@@ -83,7 +83,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ runner.os }}
+          name: GrocyCodePrintpage-${{ runner.os }}
           path: |
             *.app/**
             *.exe
