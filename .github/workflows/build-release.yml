@@ -89,6 +89,7 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
+          source venv/bin/activate
           if [[ "$RUNNER_OS" == "macOS" ]]; then
             pyside6-deploy -c pysidedeploy.macos.spec
           else
