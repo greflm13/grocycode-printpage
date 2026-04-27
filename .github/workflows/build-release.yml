@@ -2,57 +2,61 @@ name: build-release
 run-name: build-release
 
 on:
-    push:
-        tags:
-            - "*"
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
 
 jobs:
-    build:
-        strategy:
-            matrix:
-                os: [ ubuntu-latest, windows-latest, macos-latest ]
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
 
-        runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-        steps:
-            - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-            - uses: actions/setup-python@v5
-              with:
-                  python-version: "3.11"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install pyinstaller
-                  pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
 
-            - name: Build with PyInstaller (Linux/macOS)
-              if: runner.os != 'Windows'
-              run: |
-                  VERSION=$(cat .version)
-                  OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
-                  pyinstaller gui.py \
-                    -n grocycode-${VERSION}-${OS} \
-                    -F \
-                    --add-data ".version:." \
-                    --add-data "assets:assets"
+      - name: Build with PyInstaller (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          VERSION=$(cat .version)
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          pyinstaller gui.py \
+            -n grocycode-${VERSION}-${OS} \
+            -F \
+            --add-data ".version:." \
+            --add-data "assets:assets"
 
-            - name: Build with PyInstaller (Windows)
-              if: runner.os == 'Windows'
-              shell: bash
-              run: |
-                  VERSION=$(cat .version)
-                  pyinstaller gui.py modules/*.py \
-                    -n grocycode-${VERSION}-windows \
-                    -F \
-                    --add-data ".version;." \
-                    --add-data "assets;assets"
+      - name: Build with PyInstaller (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          VERSION=$(cat .version)
+          pyinstaller gui.py modules/*.py \
+            -n grocycode-${VERSION}-windows \
+            -F \
+            --add-data ".version;." \
+            --add-data "assets;assets"
 
-            - name: Release
-              uses: softprops/action-gh-release@v2
-              with:
-                  make_latest: true
-                  generate_release_notes: true
-                  files: |
-                      dist/*
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          make_latest: true
+          generate_release_notes: true
+          files: |
+            dist/*
