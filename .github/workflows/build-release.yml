@@ -51,6 +51,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
+          name: grocycode-${{ runner.os }}
           path: dist/*
   release:
     needs: build
