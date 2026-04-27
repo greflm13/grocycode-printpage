@@ -17,7 +17,7 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
-    QFormLayout, QGridLayout, QGroupBox, QLabel,
+    QFormLayout, QGroupBox, QHBoxLayout, QLabel,
     QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
     QPushButton, QSizePolicy, QSpacerItem, QStackedWidget,
     QToolBar, QVBoxLayout, QWidget)
@@ -26,7 +26,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(374, 437)
+        MainWindow.resize(487, 437)
         self.actionConfig = QAction(MainWindow)
         self.actionConfig.setObjectName(u"actionConfig")
         self.actionConfig.setMenuRole(QAction.MenuRole.PreferencesRole)
@@ -36,32 +36,39 @@ class Ui_MainWindow(object):
         self.mainLayout.setObjectName(u"mainLayout")
         self.typeGroup = QGroupBox(self.centralwidget)
         self.typeGroup.setObjectName(u"typeGroup")
-        self.gridLayout = QGridLayout(self.typeGroup)
-        self.gridLayout.setObjectName(u"gridLayout")
-        self.outputDirChooser = QPushButton(self.typeGroup)
-        self.outputDirChooser.setObjectName(u"outputDirChooser")
+        self.horizontalLayout_2 = QHBoxLayout(self.typeGroup)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.label0 = QLabel(self.typeGroup)
+        self.label0.setObjectName(u"label0")
 
-        self.gridLayout.addWidget(self.outputDirChooser, 1, 1, 1, 1)
+        self.horizontalLayout_2.addWidget(self.label0)
 
         self.typeCombo = QComboBox(self.typeGroup)
         self.typeCombo.addItem("")
         self.typeCombo.addItem("")
         self.typeCombo.setObjectName(u"typeCombo")
 
-        self.gridLayout.addWidget(self.typeCombo, 0, 1, 1, 1)
-
-        self.outputDir = QLineEdit(self.typeGroup)
-        self.outputDir.setObjectName(u"outputDir")
-
-        self.gridLayout.addWidget(self.outputDir, 1, 0, 1, 1)
-
-        self.label0 = QLabel(self.typeGroup)
-        self.label0.setObjectName(u"label0")
-
-        self.gridLayout.addWidget(self.label0, 0, 0, 1, 1)
+        self.horizontalLayout_2.addWidget(self.typeCombo)
 
 
         self.mainLayout.addWidget(self.typeGroup)
+
+        self.outputGroup = QGroupBox(self.centralwidget)
+        self.outputGroup.setObjectName(u"outputGroup")
+        self.horizontalLayout = QHBoxLayout(self.outputGroup)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.outputDir = QLineEdit(self.outputGroup)
+        self.outputDir.setObjectName(u"outputDir")
+
+        self.horizontalLayout.addWidget(self.outputDir)
+
+        self.outputDirChooser = QPushButton(self.outputGroup)
+        self.outputDirChooser.setObjectName(u"outputDirChooser")
+
+        self.horizontalLayout.addWidget(self.outputDirChooser)
+
+
+        self.mainLayout.addWidget(self.outputGroup)
 
         self.flowStack = QStackedWidget(self.centralwidget)
         self.flowStack.setObjectName(u"flowStack")
@@ -164,11 +171,12 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"PDF Generator", None))
         self.actionConfig.setText(QCoreApplication.translate("MainWindow", u"Config", None))
         self.typeGroup.setTitle(QCoreApplication.translate("MainWindow", u"PDF Type", None))
-        self.outputDirChooser.setText(QCoreApplication.translate("MainWindow", u"Browse...", None))
+        self.label0.setText(QCoreApplication.translate("MainWindow", u"Which type of pdf do you want to generate?", None))
         self.typeCombo.setItemText(0, QCoreApplication.translate("MainWindow", u"Stickers", None))
         self.typeCombo.setItemText(1, QCoreApplication.translate("MainWindow", u"List", None))
 
-        self.label0.setText(QCoreApplication.translate("MainWindow", u"Which type of pdf do you want to generate?", None))
+        self.outputGroup.setTitle(QCoreApplication.translate("MainWindow", u"Output Directory", None))
+        self.outputDirChooser.setText(QCoreApplication.translate("MainWindow", u"Browse...", None))
         self.label1.setText(QCoreApplication.translate("MainWindow", u"Product", None))
         self.generateStickersButton.setText(QCoreApplication.translate("MainWindow", u"Generate Stickers PDF", None))
         self.filterCheck.setText(QCoreApplication.translate("MainWindow", u"Filter list?", None))

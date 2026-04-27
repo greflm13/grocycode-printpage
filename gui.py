@@ -5,7 +5,7 @@ import sys
 
 import requests
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QUrl
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
 )
+from PySide6.QtGui import QDesktopServices
 
 from grocycode import create_codepage
 from codesheet import create_codesheet
@@ -176,10 +177,9 @@ class MainWindow(QMainWindow):
         outdir = self._outdir()
         matrix = get_bool_matrix(product_id)
         create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name)
-        QMessageBox.information(self, "Done", "Stickers PDF generated successfully.")
+        self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Stickers PDF generated successfully.")
 
     def _init_list_page(self) -> None:
-        # filter confirm
         self.ui.filterCheck.toggled.connect(self.ui.filterGroup.setVisible)
 
         for key in MAPPINGS.keys():
@@ -200,7 +200,7 @@ class MainWindow(QMainWindow):
         for item in self.ui.filterList.selectedItems():
             filt = item.text()
 
-            res = requests.get(f"{self.url}/api/objects/{MAPPINGS[filt]}", headers=self.headers)
+            res = requests.get(f"{self.url}/api/objects/{MAPPINGS[filt][0]}", headers=self.headers)
 
             objects = sorted(res.json(), key=lambda x: x["name"])
 
@@ -210,8 +210,6 @@ class MainWindow(QMainWindow):
         self._reload_products()
 
     def _create_combo(self, objects) -> QComboBox:
-        from PySide6.QtWidgets import QComboBox
-
         combo = QComboBox()
         for obj in objects:
             combo.addItem(obj["name"], obj["id"])
@@ -237,7 +235,7 @@ class MainWindow(QMainWindow):
             if value is None:
                 return
 
-            queries.append(f"{label}={value}")
+            queries.append(f"{MAPPINGS[label][1]}={value}")
 
         if not queries:
             self.filtered_products = self.products
@@ -279,7 +277,21 @@ class MainWindow(QMainWindow):
 
         outdir = self._outdir()
         create_codesheet(selected, os.path.join(outdir, "codesheet.pdf"))
-        QMessageBox.information(self, "Done", "Codesheet PDF generated successfully.")
+        self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Codesheet PDF generated successfully.")
+
+    def _show_pdf_done_dialog(self, pdf_path: str, title: str):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Done")
+        msg.setText(title)
+        msg.setIcon(QMessageBox.Icon.Information)
+
+        open_button = msg.addButton("Open PDF", QMessageBox.ButtonRole.AcceptRole)
+        msg.addButton("Close", QMessageBox.ButtonRole.RejectRole)
+
+        msg.exec()
+
+        if msg.clickedButton() == open_button:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(pdf_path))
 
 
 if __name__ == "__main__":

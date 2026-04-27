@@ -16,10 +16,10 @@ SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__
 
 
 MAPPINGS = {
-    "product_group_id": "product_groups",
-    "location_id": "locations",
-    "parent_product_id": "products",
-    "shopping_location_id": "shopping_locations",
+    "Product Group": ("product_groups", "product_group_id"),
+    "Location": ("locations", "location_id"),
+    "Parent Product": ("products", "parent_product_id"),
+    "Shopping Location": ("shopping_locations", "shopping_location_id"),
 }
 
 

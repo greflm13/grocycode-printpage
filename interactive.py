@@ -66,7 +66,7 @@ def lost(url: str, api_key: str, products: list[dict]):
         possible = {}
         for filt in filters:
             res = requests.get(
-                url=f"{url}/api/objects/{MAPPINGS[filt]}",
+                url=f"{url}/api/objects/{MAPPINGS[filt][0]}",
                 headers={"accept": "application/json", "GROCY-API-KEY": api_key},
             )
             possible[filt] = sorted(res.json(), key=lambda x: x["name"])
@@ -81,7 +81,7 @@ def lost(url: str, api_key: str, products: list[dict]):
             for item, values in possible.items()
         ]
         values = questionary.prompt(choices)
-        queries = [urllib.parse.quote(f"{k}={v}") for k, v in values.items()]
+        queries = [urllib.parse.quote(f"{MAPPINGS[k][1]}={v}") for k, v in values.items()]
         res = requests.get(
             f"{url}/api/objects/products?query%5B%5D={'&query%5B%5D='.join(queries)}",
             headers={"accept": "application/json", "GROCY-API-KEY": api_key},

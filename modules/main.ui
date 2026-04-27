@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>374</width>
+    <width>487</width>
     <height>437</height>
    </rect>
   </property>
@@ -20,15 +20,15 @@
       <property name="title">
        <string>PDF Type</string>
       </property>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="1">
-        <widget class="QPushButton" name="outputDirChooser">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QLabel" name="label0">
          <property name="text">
-          <string>Browse...</string>
+          <string>Which type of pdf do you want to generate?</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
+       <item>
         <widget class="QComboBox" name="typeCombo">
          <item>
           <property name="text">
@@ -42,13 +42,22 @@
          </item>
         </widget>
        </item>
-       <item row="1" column="0">
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="outputGroup">
+      <property name="title">
+       <string>Output Directory</string>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
         <widget class="QLineEdit" name="outputDir"/>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label0">
+       <item>
+        <widget class="QPushButton" name="outputDirChooser">
          <property name="text">
-          <string>Which type of pdf do you want to generate?</string>
+          <string>Browse...</string>
          </property>
         </widget>
        </item>
