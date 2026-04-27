@@ -25,17 +25,13 @@ jobs:
           python -m venv venv
 
       - name: Install Qt deploy tooling
-        shell: bash
         run: |
-          source venv/bin/activate || .\\venv\\Scripts\\activate
-          python -m pip install --upgrade pip
-          pip install pyside6
+          venv/bin/python -m pip install --upgrade pip || venv\Scripts\python -m pip install --upgrade pip
+          venv/bin/python -m pip install pyside6 || venv\Scripts\python -m pip install pyside6
 
       - name: Build desktop app
-        shell: bash
         run: |
-          source venv/bin/activate || .\\venv\\Scripts\\activate
-          pyside6-deploy -c pysidedeploy.spec
+          venv/bin/pyside6-deploy -c pysidedeploy.spec || venv\Scripts\pyside6-deploy -c pysidedeploy.spec
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
