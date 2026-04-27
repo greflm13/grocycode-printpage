@@ -52,11 +52,7 @@ jobs:
         run: |
           source venv/bin/activate
           python -m pip install --upgrade pip
-          pip install pyside6 imageio
-
-      - name: Disable Nuitka ccache
-        if: runner.os != 'Windows'
-        run: echo "NUITKA_DISABLE_CCACHE=1" >> $GITHUB_ENV
+          pip install pyside6
 
       - name: Build desktop app (Unix)
         if: runner.os != 'Windows'
@@ -64,9 +60,9 @@ jobs:
         run: |
           source venv/bin/activate
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            pyside6-deploy -c pysidedeploy.macos.spec
+            pyside6-deploy -c pysidedeploy.macos.spec --disable-ccache --assume-yes-for-downloads
           else
-            pyside6-deploy -c pysidedeploy.linux.spec
+            pyside6-deploy -c pysidedeploy.linux.spec --disable-ccache --assume-yes-for-downloads
           fi
 
       - name: Install dependencies (Windows)
@@ -75,18 +71,14 @@ jobs:
         run: |
           venv\Scripts\Activate.ps1
           python -m pip install --upgrade pip
-          pip install pyside6 imageio
-
-      - name: Disable Nuitka ccache (Windows)
-        if: runner.os == 'Windows'
-        run: echo "NUITKA_DISABLE_CCACHE=1" >> $env:GITHUB_ENV
+          pip install pyside6
 
       - name: Build desktop app (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           venv\Scripts\Activate.ps1
-          pyside6-deploy -c pysidedeploy.windows.spec
+          pyside6-deploy -c pysidedeploy.windows.spec --disable-ccache --assume-yes-for-downloads
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
