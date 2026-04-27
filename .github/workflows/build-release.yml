@@ -29,7 +29,7 @@ jobs:
         run: |
           source venv/bin/activate
           python -m pip install --upgrade pip
-          pip install pyside6
+          pip install pyside6 imageio
 
       - name: Build desktop app (Unix)
         if: runner.os != 'Windows'
@@ -44,7 +44,7 @@ jobs:
         run: |
           venv\Scripts\Activate.ps1
           python -m pip install --upgrade pip
-          pip install pyside6
+          pip install pyside6 imageio
 
       - name: Build desktop app (Windows)
         if: runner.os == 'Windows'
