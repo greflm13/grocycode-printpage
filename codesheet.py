@@ -19,6 +19,7 @@ from modules.utils import (
     draw_datamatrix_vector,
     check_or_load_login,
     PageLayout,
+    __version__,
 )
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
@@ -102,6 +103,7 @@ def argparser() -> argparse.Namespace:
         type=query,
     )
     parser.add_argument("-o", "--output", help="output directory (default 'output')", type=str, default="output")
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s " + __version__)
     return parser.parse_args()
 
 

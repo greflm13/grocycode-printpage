@@ -1,4 +1,7 @@
 pylibdmtx~=0.1.10
+pyside6~=6.11.0
+pyside6_addons~=6.11.0
+pyside6_essentials~=6.11.0
 questionary~=2.1.1
 reportlab~=4.4.10
 Requests~=2.33.1

@@ -18,15 +18,16 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
 )
-from PySide6.QtGui import QDesktopServices, QRegularExpressionValidator
+from PySide6.QtGui import QIcon, QDesktopServices, QRegularExpressionValidator
 
 from grocycode import create_codepage
 from codesheet import create_codesheet
 from modules.main_window import Ui_MainWindow
 from modules.config_window import Ui_Dialog
-from modules.utils import check_or_load_gui_login, save_login, get_bool_matrix, MAPPINGS, BASE_URL_RE
+from modules.utils import check_or_load_gui_login, save_login, get_bool_matrix, MAPPINGS, BASE_URL_RE, __version__
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
+APP_ICON = QIcon(os.path.join(SCRIPTDIR, "assets", "icon.svg"))
 
 
 class LoginDialog(QDialog):
@@ -35,6 +36,7 @@ class LoginDialog(QDialog):
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        self.setWindowIcon(APP_ICON)
         self.ui.showKey.stateChanged.connect(self._toggle_key_visibility)
         self.ui.apiKeyInput.setEchoMode(QLineEdit.Password)
         self.ui.urlInput.setValidator(QRegularExpressionValidator(QRegularExpression(BASE_URL_RE.pattern)))
@@ -60,6 +62,7 @@ class MainWindow(QMainWindow):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.setWindowIcon(APP_ICON)
 
         self.api_key, self.url = check_or_load_gui_login()
 
@@ -80,6 +83,7 @@ class MainWindow(QMainWindow):
         self.products = sorted(res.json(), key=lambda x: x["name"])
 
         self.ui.actionConfig.triggered.connect(self._show_login_dialog)
+        self.ui.actionInfo.triggered.connect(self._show_info_dialog)
 
         self._init_type_selection()
         self._init_stickers_page()
@@ -87,6 +91,17 @@ class MainWindow(QMainWindow):
         self._init_output_directory()
 
         self.ui.flowStack.setCurrentIndex(0)
+
+    def _show_info_dialog(self) -> None:
+        QMessageBox.about(
+            self,
+            "About GrocyCode Printpage",
+            f"""
+            <b>GrocyCode Printpage</b><br>
+            Version: {__version__}<br><br>
+            Generates sticker and codesheet PDFs for Grocy.
+            """,
+        )
 
     def _show_login_dialog(self) -> bool:
         curr_api_key, curr_url = check_or_load_gui_login()
@@ -124,7 +139,7 @@ class MainWindow(QMainWindow):
             return True
 
     def _init_output_directory(self) -> None:
-        default_output = os.path.join(SCRIPTDIR, "output")
+        default_output = os.path.join(os.getcwd(), "output")
         os.makedirs(default_output, exist_ok=True)
 
         self.ui.outputDir.setText(default_output)
@@ -308,6 +323,8 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setApplicationVersion(__version__)
+    app.setWindowIcon(APP_ICON)
 
     window = MainWindow()
     window.show()

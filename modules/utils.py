@@ -13,7 +13,14 @@ QUERY_RE = re.compile(rf"^(?P<field>[A-Za-z_][A-Za-z0-9_]*)(?P<operator>{_OP_PAT
 BASE_URL_RE = re.compile(r"^https?:\/\/((([A-Za-z0-9-]+\.)+[A-Za-z]{2,})|localhost|(\d{1,3}\.){3}\d{1,3})(:\d+)?$")
 JSON_FILE_RE = re.compile(r"^(?:\.{0,2}\/|\/)?(?:[^\/\0]+\/)*[^\/\0]+\.json$", re.VERBOSE)
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
-
+if "APPDATA" in os.environ:
+    CONFIGHOME = os.environ["APPDATA"]
+elif "XDG_CONFIG_HOME" in os.environ:
+    CONFIGHOME = os.environ["XDG_CONFIG_HOME"]
+else:
+    CONFIGHOME = os.path.join(os.environ["HOME"], ".config")
+CONFIGPATH = os.path.join(CONFIGHOME, "grocycode-printpage")
+__version__ = open(os.path.join(SCRIPTDIR, ".version"), "r").read()
 
 MAPPINGS = {
     "Product Group": ("product_groups", "product_group_id"),
@@ -96,13 +103,11 @@ def check_or_load_login() -> tuple[str, str]:
 
 
 def check_or_load_gui_login() -> tuple[str | None, str | None]:
-    file = os.path.join(SCRIPTDIR, ".api_key")
-
-    if not os.path.exists(file):
+    if not os.path.exists(CONFIGPATH):
         return None, None
 
     try:
-        with open(file, "r") as login_file:
+        with open(CONFIGPATH, "r") as login_file:
             login_dict = json.load(login_file)
 
         api_key = login_dict.get("api_key")
@@ -118,6 +123,6 @@ def check_or_load_gui_login() -> tuple[str | None, str | None]:
 
 
 def save_login(api_key: str, url: str) -> None:
-    file = os.path.join(SCRIPTDIR, ".api_key")
-    with open(file, "w") as f:
+    os.makedirs(CONFIGHOME, exist_ok=True)
+    with open(CONFIGPATH, "w") as f:
         json.dump({"api_key": api_key, "url": url}, f)

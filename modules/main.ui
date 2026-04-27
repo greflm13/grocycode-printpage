@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>PDF Generator</string>
+   <string>GrocyCode Printpage</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="mainLayout">
@@ -188,6 +188,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionConfig"/>
+   <addaction name="actionInfo"/>
   </widget>
   <action name="actionConfig">
    <property name="text">
@@ -195,6 +196,14 @@
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::PreferencesRole</enum>
+   </property>
+  </action>
+  <action name="actionInfo">
+   <property name="text">
+    <string>Info</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::AboutRole</enum>
    </property>
   </action>
  </widget>
