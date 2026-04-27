@@ -31,7 +31,7 @@ jobs:
 
       - name: Build desktop app
         run: |
-          venv/bin/pyside6-deploy -c pysidedeploy.spec || venv\Scripts\pyside6-deploy -c pysidedeploy.spec
+          venv/bin/python -m PySide6.scripts.deploy -c pysidedeploy.spec || venv\Scripts\python -m PySide6.scripts.deploy -c pysidedeploy.spec
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
