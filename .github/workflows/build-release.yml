@@ -139,8 +139,8 @@ jobs:
         run: |+
           cd dist
               
-          for d in desktop-*; do
-            zip -r "$d.zip" "$d"
+          for d in GrocyCodePrintpage-*; do
+            zip -r "$d.zip" "$d/**"
           done
               
       - name: Create release
