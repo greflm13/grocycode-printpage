@@ -11,40 +11,54 @@
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
+    QCursor, QFont, QFontDatabase, QGradient,
+    QIcon, QImage, QKeySequence, QLinearGradient,
+    QPainter, QPalette, QPixmap, QRadialGradient,
+    QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
-    QFormLayout, QGroupBox, QHBoxLayout, QLabel,
-    QListWidget, QListWidgetItem, QMainWindow, QPushButton,
-    QSizePolicy, QSpacerItem, QStackedWidget, QVBoxLayout,
-    QWidget)
+    QFormLayout, QGridLayout, QGroupBox, QLabel,
+    QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
+    QPushButton, QSizePolicy, QSpacerItem, QStackedWidget,
+    QToolBar, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(368, 622)
+        MainWindow.resize(374, 437)
+        self.actionConfig = QAction(MainWindow)
+        self.actionConfig.setObjectName(u"actionConfig")
+        self.actionConfig.setMenuRole(QAction.MenuRole.PreferencesRole)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.mainLayout = QVBoxLayout(self.centralwidget)
         self.mainLayout.setObjectName(u"mainLayout")
         self.typeGroup = QGroupBox(self.centralwidget)
         self.typeGroup.setObjectName(u"typeGroup")
-        self.hboxLayout = QHBoxLayout(self.typeGroup)
-        self.hboxLayout.setObjectName(u"hboxLayout")
-        self.label0 = QLabel(self.typeGroup)
-        self.label0.setObjectName(u"label0")
+        self.gridLayout = QGridLayout(self.typeGroup)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.outputDirChooser = QPushButton(self.typeGroup)
+        self.outputDirChooser.setObjectName(u"outputDirChooser")
 
-        self.hboxLayout.addWidget(self.label0)
+        self.gridLayout.addWidget(self.outputDirChooser, 1, 1, 1, 1)
 
         self.typeCombo = QComboBox(self.typeGroup)
         self.typeCombo.addItem("")
         self.typeCombo.addItem("")
         self.typeCombo.setObjectName(u"typeCombo")
 
-        self.hboxLayout.addWidget(self.typeCombo)
+        self.gridLayout.addWidget(self.typeCombo, 0, 1, 1, 1)
+
+        self.outputDir = QLineEdit(self.typeGroup)
+        self.outputDir.setObjectName(u"outputDir")
+
+        self.gridLayout.addWidget(self.outputDir, 1, 0, 1, 1)
+
+        self.label0 = QLabel(self.typeGroup)
+        self.label0.setObjectName(u"label0")
+
+        self.gridLayout.addWidget(self.label0, 0, 0, 1, 1)
 
 
         self.mainLayout.addWidget(self.typeGroup)
@@ -132,6 +146,11 @@ class Ui_MainWindow(object):
         self.mainLayout.addWidget(self.flowStack)
 
         MainWindow.setCentralWidget(self.centralwidget)
+        self.toolBar = QToolBar(MainWindow)
+        self.toolBar.setObjectName(u"toolBar")
+        MainWindow.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolBar)
+
+        self.toolBar.addAction(self.actionConfig)
 
         self.retranslateUi(MainWindow)
 
@@ -143,11 +162,13 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"PDF Generator", None))
+        self.actionConfig.setText(QCoreApplication.translate("MainWindow", u"Config", None))
         self.typeGroup.setTitle(QCoreApplication.translate("MainWindow", u"PDF Type", None))
-        self.label0.setText(QCoreApplication.translate("MainWindow", u"Which type of pdf do you want to generate?", None))
-        self.typeCombo.setItemText(0, QCoreApplication.translate("MainWindow", u"stickers", None))
-        self.typeCombo.setItemText(1, QCoreApplication.translate("MainWindow", u"list", None))
+        self.outputDirChooser.setText(QCoreApplication.translate("MainWindow", u"Browse...", None))
+        self.typeCombo.setItemText(0, QCoreApplication.translate("MainWindow", u"Stickers", None))
+        self.typeCombo.setItemText(1, QCoreApplication.translate("MainWindow", u"List", None))
 
+        self.label0.setText(QCoreApplication.translate("MainWindow", u"Which type of pdf do you want to generate?", None))
         self.label1.setText(QCoreApplication.translate("MainWindow", u"Product", None))
         self.generateStickersButton.setText(QCoreApplication.translate("MainWindow", u"Generate Stickers PDF", None))
         self.filterCheck.setText(QCoreApplication.translate("MainWindow", u"Filter list?", None))
@@ -156,5 +177,6 @@ class Ui_MainWindow(object):
         self.filterValuesGroup.setTitle(QCoreApplication.translate("MainWindow", u"Filter values", None))
         self.label3.setText(QCoreApplication.translate("MainWindow", u"Products", None))
         self.generateListButton.setText(QCoreApplication.translate("MainWindow", u"Generate Codesheet PDF", None))
+        self.toolBar.setWindowTitle(QCoreApplication.translate("MainWindow", u"toolBar", None))
     # retranslateUi
 

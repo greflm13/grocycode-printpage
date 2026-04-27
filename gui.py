@@ -6,26 +6,65 @@ import sys
 import requests
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QListWidgetItem, QApplication, QComboBox, QFormLayout
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDialog,
+    QFileDialog,
+    QFormLayout,
+    QLineEdit,
+    QListWidgetItem,
+    QMainWindow,
+    QMessageBox,
+)
 
 from grocycode import create_codepage
 from codesheet import create_codesheet
 from modules.main_window import Ui_MainWindow
-from modules.utils import check_or_load_login, get_bool_matrix, MAPPINGS
+from modules.config_window import Ui_Dialog
+from modules.utils import check_or_load_gui_login, save_login, get_bool_matrix, MAPPINGS
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
-OUTDIR = os.path.join(SCRIPTDIR, "output")
+
+
+class LoginDialog(QDialog):
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
+        self.ui.showKey.stateChanged.connect(self._toggle_key_visibility)
+        self.ui.apiKeyInput.setEchoMode(QLineEdit.Password)
+
+    def _toggle_key_visibility(self) -> None:
+        visible = self.ui.showKey.isChecked()
+        if visible:
+            self.ui.apiKeyInput.setEchoMode(QLineEdit.Normal)
+        else:
+            self.ui.apiKeyInput.setEchoMode(QLineEdit.Password)
+
+    def get_values(self) -> tuple[str, str, bool]:
+        return (
+            self.ui.apiKeyInput.text().strip(),
+            self.ui.urlInput.text().strip().rstrip("/"),
+            self.ui.saveLogin.isChecked(),
+        )
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        os.makedirs(OUTDIR, exist_ok=True)
-        self.api_key, self.url = check_or_load_login()
+        self.api_key, self.url = check_or_load_gui_login()
+
+        if not self.api_key or not self.url:
+            if not self._show_login_dialog():
+                QMessageBox.critical(self, "Error", "API key and server URL are required.")
+                sys.exit(1)
+
         self.headers = {
             "accept": "application/json",
             "GROCY-API-KEY": self.api_key,
@@ -37,22 +76,81 @@ class MainWindow(QMainWindow):
         )
         self.products = sorted(res.json(), key=lambda x: x["name"])
 
+        self.ui.actionConfig.triggered.connect(self._show_login_dialog)
+
         self._init_type_selection()
         self._init_stickers_page()
         self._init_list_page()
+        self._init_output_directory()
 
         self.ui.flowStack.setCurrentIndex(0)
 
-    def _init_type_selection(self):
+    def _show_login_dialog(self) -> bool:
+        curr_api_key, curr_url = check_or_load_gui_login()
+        while True:
+            dialog = LoginDialog(self)
+            dialog.ui.apiKeyInput.setText(curr_api_key)
+            dialog.ui.urlInput.setText(curr_url)
+
+            if not dialog.exec():
+                return False
+
+            api_key, url, save = dialog.get_values()
+            curr_api_key = api_key
+            curr_url = url
+
+            if not api_key or not url:
+                QMessageBox.warning(self, "Invalid input", "Both API key and server URL are required.")
+                continue
+
+            try:
+                res = requests.get(url + "/api/system/info", headers={"GROCY-API-KEY": api_key}, timeout=5)
+                if res.status_code != 200:
+                    QMessageBox.critical(self, "Connection failed", "API key is invalid.")
+                    continue
+            except requests.RequestException:
+                QMessageBox.critical(self, "Connection failed", "URL is invalid.")
+                continue
+
+            self.api_key = api_key
+            self.url = url
+
+            if save:
+                save_login(api_key, url)
+
+            return True
+
+    def _init_output_directory(self) -> None:
+        default_output = os.path.join(SCRIPTDIR, "output")
+        os.makedirs(default_output, exist_ok=True)
+
+        self.ui.outputDir.setText(default_output)
+
+        self.ui.outputDirChooser.clicked.connect(self._select_output_directory)
+
+    def _select_output_directory(self) -> None:
+        current = self.ui.outputDir.text()
+
+        directory = QFileDialog.getExistingDirectory(self, "Select Output Directory", current)
+        if not directory:
+            return
+
+        self.ui.outputDir.setText(directory)
+        os.makedirs(directory, exist_ok=True)
+
+    def _outdir(self) -> str:
+        return self.ui.outputDir.text()
+
+    def _init_type_selection(self) -> None:
         self.ui.typeCombo.currentTextChanged.connect(self._on_type_changed)
 
-    def _on_type_changed(self, text: str):
-        if text == "stickers":
+    def _on_type_changed(self, text: str) -> None:
+        if text == "Stickers":
             self.ui.flowStack.setCurrentWidget(self.ui.stickersPage)
-        elif text == "list":
+        elif text == "List":
             self.ui.flowStack.setCurrentWidget(self.ui.listPage)
 
-    def _init_stickers_page(self):
+    def _init_stickers_page(self) -> None:
         combo = self.ui.productCombo
         combo.setEditable(True)
         combo.addItems([p["name"] for p in self.products])
@@ -60,7 +158,7 @@ class MainWindow(QMainWindow):
 
         self.ui.generateStickersButton.clicked.connect(self._generate_stickers)
 
-    def _generate_stickers(self):
+    def _generate_stickers(self) -> None:
         product_name = self.ui.productCombo.currentText()
         if not product_name:
             return
@@ -75,11 +173,12 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Product not found: {product_name}")
             return
 
+        outdir = self._outdir()
         matrix = get_bool_matrix(product_id)
-        create_codepage(matrix, os.path.join(OUTDIR, product_name + ".pdf"), product_name)
+        create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name)
         QMessageBox.information(self, "Done", "Stickers PDF generated successfully.")
 
-    def _init_list_page(self):
+    def _init_list_page(self) -> None:
         # filter confirm
         self.ui.filterCheck.toggled.connect(self.ui.filterGroup.setVisible)
 
@@ -90,7 +189,7 @@ class MainWindow(QMainWindow):
         self.ui.generateListButton.clicked.connect(self._generate_list)
         self.filtered_products = []
 
-    def _update_filter_value_inputs(self):
+    def _update_filter_value_inputs(self) -> None:
         layout = self.ui.filterValuesLayout
 
         while layout.count():
@@ -110,7 +209,7 @@ class MainWindow(QMainWindow):
 
         self._reload_products()
 
-    def _create_combo(self, objects):
+    def _create_combo(self, objects) -> QComboBox:
         from PySide6.QtWidgets import QComboBox
 
         combo = QComboBox()
@@ -119,7 +218,7 @@ class MainWindow(QMainWindow):
         combo.currentIndexChanged.connect(self._reload_products)
         return combo
 
-    def _reload_products(self):
+    def _reload_products(self) -> None:
         queries = []
         layout = self.ui.filterValuesLayout
 
@@ -160,7 +259,7 @@ class MainWindow(QMainWindow):
 
         self._populate_product_list()
 
-    def _populate_product_list(self):
+    def _populate_product_list(self) -> None:
         self.ui.productList.clear()
 
         for idx, prod in enumerate(self.filtered_products):
@@ -168,7 +267,7 @@ class MainWindow(QMainWindow):
             item.setData(Qt.UserRole, idx)
             self.ui.productList.addItem(item)
 
-    def _generate_list(self):
+    def _generate_list(self) -> None:
         selected = []
 
         for item in self.ui.productList.selectedItems():
@@ -178,7 +277,8 @@ class MainWindow(QMainWindow):
         if not selected:
             return
 
-        create_codesheet(selected, os.path.join(OUTDIR, "codesheet.pdf"))
+        outdir = self._outdir()
+        create_codesheet(selected, os.path.join(outdir, "codesheet.pdf"))
         QMessageBox.information(self, "Done", "Codesheet PDF generated successfully.")
 
 

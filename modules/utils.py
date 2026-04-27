@@ -93,3 +93,31 @@ def check_or_load_login() -> tuple[str, str]:
             api_key = login_dict["api_key"]
             url = login_dict["url"]
     return api_key, url
+
+
+def check_or_load_gui_login() -> tuple[str | None, str | None]:
+    file = os.path.join(SCRIPTDIR, ".api_key")
+
+    if not os.path.exists(file):
+        return None, None
+
+    try:
+        with open(file, "r") as login_file:
+            login_dict = json.load(login_file)
+
+        api_key = login_dict.get("api_key")
+        url = login_dict.get("url")
+
+        if not api_key or not url:
+            return None, None
+
+        return api_key, url
+
+    except (json.JSONDecodeError, OSError):
+        return None, None
+
+
+def save_login(api_key: str, url: str) -> None:
+    file = os.path.join(SCRIPTDIR, ".api_key")
+    with open(file, "w") as f:
+        json.dump({"api_key": api_key, "url": url}, f)
