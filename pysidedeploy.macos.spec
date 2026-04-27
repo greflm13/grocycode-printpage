@@ -1,7 +1,7 @@
 [app]
 
 # title of your application
-title = GrocyCode Printpage
+title = GrocyCodePrintpage
 
 # project root directory. default = The parent directory of input_file
 project_dir = .
@@ -16,7 +16,7 @@ exec_directory = .
 project_file = 
 
 # application icon
-icon = assets/icon.svg
+icon = assets/icon.icns
 
 [python]
 

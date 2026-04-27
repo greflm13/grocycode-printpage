@@ -20,6 +20,56 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Generate macOS icon (.icns)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install inkscape imagemagick
+
+          inkscape assets/icon.svg \
+            --export-filename=assets/icon_1024.png \
+            --export-width=1024
+
+          mkdir -p icon.iconset
+
+          sips -z 16 16     assets/icon_1024.png --out icon.iconset/icon_16x16.png
+          sips -z 32 32     assets/icon_1024.png --out icon.iconset/icon_16x16@2x.png
+          sips -z 32 32     assets/icon_1024.png --out icon.iconset/icon_32x32.png
+          sips -z 64 64     assets/icon_1024.png --out icon.iconset/icon_32x32@2x.png
+          sips -z 128 128   assets/icon_1024.png --out icon.iconset/icon_128x128.png
+          sips -z 256 256   assets/icon_1024.png --out icon.iconset/icon_128x128@2x.png
+          sips -z 256 256   assets/icon_1024.png --out icon.iconset/icon_256x256.png
+          sips -z 512 512   assets/icon_1024.png --out icon.iconset/icon_256x256@2x.png
+          sips -z 512 512   assets/icon_1024.png --out icon.iconset/icon_512x512.png
+          sips -z 1024 1024 assets/icon_1024.png --out icon.iconset/icon_512x512@2x.png
+
+          iconutil -c icns icon.iconset -o assets/icon.icns
+
+      - name: Generate Windows icon (.ico)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |+
+          choco install inkscape imagemagick -y
+
+          inkscape assets/icon.svg `
+            --export-filename=assets/icon_1024.png `
+            --export-width=1024
+
+          magick assets/icon_1024.png `
+            -define icon:auto-resize=256,128,64,48,32,16 `
+            assets/icon.ico
+            
+      - name: Generate Linux icon (.png)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y inkscape
+
+          inkscape assets/icon.svg \
+            --export-filename=assets/icon.png \
+            --export-width=512
+
       - name: Create virtual environment
         run: python -m venv venv
 
@@ -31,12 +81,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyside6 imageio
 
+      - name: Disable Nuitka ccache
+        if: runner.os != 'Windows'
+        run: echo "NUITKA_DISABLE_CCACHE=1" >> $GITHUB_ENV
+
       - name: Build desktop app (Unix)
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          source venv/bin/activate
-          pyside6-deploy -c pysidedeploy.spec
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            pyside6-deploy -c pysidedeploy.macos.spec
+          else
+            pyside6-deploy -c pysidedeploy.linux.spec
+          fi
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
@@ -46,18 +103,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyside6 imageio
 
+      - name: Disable Nuitka ccache (Windows)
+        if: runner.os == 'Windows'
+        run: echo "NUITKA_DISABLE_CCACHE=1" >> $env:GITHUB_ENV
+
       - name: Build desktop app (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           venv\Scripts\Activate.ps1
-          pyside6-deploy -c pysidedeploy.spec
+          pyside6-deploy -c pysidedeploy.windows.spec
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ runner.os }}
-          path: dist/*
+          path: |
+            *.app/**
+            *.exe
+            *.bin
+            *.dist/**
 
   # android:
   #   runs-on: ubuntu-latest
@@ -103,8 +168,17 @@ jobs:
         with:
           path: dist
 
+      - name: Package release assets
+        shell: bash
+        run: |+
+          cd dist
+              
+          for d in desktop-*; do
+            zip -r "$d.zip" "$d"
+          done
+              
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: dist/**
+          files: dist/*.zip
