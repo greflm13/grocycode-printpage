@@ -4,8 +4,9 @@ import json
 
 from enum import Enum
 
+
+from ppf.datamatrix import DataMatrix
 from reportlab.lib import colors
-from pylibdmtx.pylibdmtx import encode
 
 _OPERATORS = ["!=", "!~", "<=", ">=", "=", "<", ">", "~", "§"]
 _OP_PATTERN = "|".join(map(re.escape, _OPERATORS))
@@ -43,23 +44,30 @@ class PageLayout(Enum):
 
 
 def get_bool_matrix(data) -> list[bool]:
-    encoded = encode(f"grcy:p:{data}".encode("utf-8"))
-    w, h = encoded.width, encoded.height
-    pixels = encoded.pixels
+    matrix = DataMatrix(f"grcy:p:{data}")
+    return matrix.matrix
 
-    matrix = [[False] * w for _ in range(h)]
-    idx = 0
 
-    for y in range(h):
-        for x in range(w):
-            r = pixels[idx]
-            matrix[y][x] = r < 128
-            idx += 3
+def add_quiet_zone(matrix, q=1):
+    cols = len(matrix[0])
+    empty_row = [0] * (cols + 2 * q)
 
-    return matrix
+    out = []
+
+    for _ in range(q):
+        out.append(empty_row[:])
+
+    for row in matrix:
+        out.append([0] * q + row + [0] * q)
+
+    for _ in range(q):
+        out.append(empty_row[:])
+
+    return out
 
 
 def draw_datamatrix_vector(pdf, matrix, x, y, size) -> None:
+    matrix = add_quiet_zone(matrix)
     rows = len(matrix)
     cols = len(matrix[0])
 

@@ -24,7 +24,7 @@ icon = assets/icon.ico
 python_path = /home/user/.pyenv/versions/3.11.15/envs/grocycode-printpage/bin/python
 
 # python packages to install
-packages = Nuitka==2.7.11,pylibdmtx==0.1.10,reportlab==4.4.10
+packages = Nuitka==2.7.11,ppf_datamatrix==0.2,reportlab==4.4.10
 
 # buildozer = for deploying Android application
 android_packages = buildozer==1.5.0,cython==0.29.33
