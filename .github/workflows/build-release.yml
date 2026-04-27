@@ -85,10 +85,7 @@ jobs:
         with:
           name: GrocyCodePrintpage-${{ runner.os }}
           path: |
-            *.app/**
-            *.exe
-            *.bin
-            *.dist/**
+            dist/**
 
   # android:
   #   runs-on: ubuntu-latest

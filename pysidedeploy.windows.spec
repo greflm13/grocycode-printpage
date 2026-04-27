@@ -10,13 +10,15 @@ project_dir = .
 input_file = main.py
 
 # directory where the executable output is generated
-exec_directory = .
+exec_directory = dist
 
 # path to the project file relative to project_dir
-project_file = 
+project_file = pyproject.toml
 
 # application icon
 icon = assets/icon.ico
+
+extra_data_files = .version
 
 [python]
 

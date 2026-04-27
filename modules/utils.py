@@ -3,6 +3,7 @@ import re
 import json
 
 from enum import Enum
+from importlib.metadata import version, PackageNotFoundError
 
 
 from ppf.datamatrix import DataMatrix
@@ -21,7 +22,6 @@ elif "XDG_CONFIG_HOME" in os.environ:
 else:
     CONFIGHOME = os.path.join(os.environ["HOME"], ".config")
 CONFIGPATH = os.path.join(CONFIGHOME, "grocycode-printpage")
-__version__ = open(os.path.join(SCRIPTDIR, ".version"), "r").read()
 
 MAPPINGS = {
     "Product Group": ("product_groups", "product_group_id"),
@@ -41,6 +41,13 @@ class PageLayout(Enum):
     BLOCK_HEIGHT = CELL_HEIGHT
     PAGE_HEIGHT = 2970
     PAGE_WIDTH = 2100
+
+
+def get_version() -> str:
+    try:
+        return version("grocycode-printpage")
+    except PackageNotFoundError:
+        return "dev"
 
 
 def get_bool_matrix(data) -> list[bool]:

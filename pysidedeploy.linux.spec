@@ -10,13 +10,14 @@ project_dir = .
 input_file = main.py
 
 # directory where the executable output is generated
-exec_directory = .
+exec_directory = dist
 
 # path to the project file relative to project_dir
-project_file = 
+project_file = pyproject.toml
 
 # application icon
 icon = assets/icon.svg
+extra_data_files = .version
 
 [python]
 
@@ -40,7 +41,7 @@ qml_files =
 excluded_qml_plugins = 
 
 # qt modules used. comma separated
-modules = Core,DBus,Gui,Network,Widgets
+modules = Core,DBus,Gui,Widgets
 
 # qt plugins used by the application. only relevant for desktop deployment
 # for qt plugins used in android application see [android][plugins]

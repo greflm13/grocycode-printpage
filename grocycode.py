@@ -15,7 +15,7 @@ from modules.utils import (
     draw_datamatrix_vector,
     check_or_load_login,
     PageLayout,
-    __version__,
+    get_version,
 )
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
@@ -65,7 +65,7 @@ def argparser() -> argparse.Namespace:
     parser.add_argument("product_id", help="product id OR server url for the code", type=base_url_or_int_type)
     parser.add_argument("product_name", help="product name for the code", type=str)
     parser.add_argument("-o", "--output", help="output directory (default 'output')", type=str, default="output")
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s " + __version__)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s " + get_version())
     return parser.parse_args()
 
 

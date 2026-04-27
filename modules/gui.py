@@ -36,7 +36,7 @@ from modules.utils import (
     get_bool_matrix,
     MAPPINGS,
     BASE_URL_RE,
-    __version__,
+    get_version,
 )
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
@@ -258,7 +258,7 @@ class MainWindow(QMainWindow):
             "About GrocyCode Printpage",
             f"""
             <b>GrocyCode Printpage</b><br>
-            Version: {__version__}<br><br>
+            Version: {get_version()}<br><br>
             Generates sticker and codesheet PDFs for Grocy.
             """,
         )
@@ -420,7 +420,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setApplicationVersion(__version__)
+    app.setApplicationVersion(get_version())
     app.setWindowIcon(APP_ICON)
 
     window = MainWindow()

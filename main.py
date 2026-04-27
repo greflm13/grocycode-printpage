@@ -3,12 +3,12 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
-from modules.utils import __version__
+from modules.utils import get_version
 from modules.gui import MainWindow, APP_ICON
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setApplicationVersion(__version__)
+    app.setApplicationVersion(get_version())
     app.setWindowIcon(APP_ICON)
 
     window = MainWindow()
