@@ -44,7 +44,9 @@ jobs:
           iconutil -c icns icon.iconset -o assets/icon.icns
 
       - name: Create virtual environment
-        run: python -m venv venv
+        run: |
+          python -m venv venv
+          mkdir dist
 
       - name: Install dependencies (Unix)
         if: runner.os != 'Windows'
