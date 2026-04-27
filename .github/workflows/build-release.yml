@@ -24,7 +24,7 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          brew install inkscape imagemagick
+          brew install inkscape
 
           inkscape assets/icon.svg --export-filename=assets/icon_1024.png --export-width=1024
 
