@@ -60,9 +60,9 @@ jobs:
         run: |
           source venv/bin/activate
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            pyside6-deploy -c pysidedeploy.macos.spec --disable-ccache --assume-yes-for-downloads
+            pyside6-deploy -c pysidedeploy.macos.spec --force
           else
-            pyside6-deploy -c pysidedeploy.linux.spec --disable-ccache --assume-yes-for-downloads
+            pyside6-deploy -c pysidedeploy.linux.spec --force
           fi
 
       - name: Install dependencies (Windows)
@@ -78,7 +78,7 @@ jobs:
         shell: pwsh
         run: |
           venv\Scripts\Activate.ps1
-          pyside6-deploy -c pysidedeploy.windows.spec --disable-ccache --assume-yes-for-downloads
+          pyside6-deploy -c pysidedeploy.windows.spec --force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
