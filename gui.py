@@ -5,10 +5,11 @@ import sys
 
 import requests
 
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QUrl, QRegularExpression
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
+    QCompleter,
     QDialog,
     QFileDialog,
     QFormLayout,
@@ -17,13 +18,13 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
 )
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QRegularExpressionValidator
 
 from grocycode import create_codepage
 from codesheet import create_codesheet
 from modules.main_window import Ui_MainWindow
 from modules.config_window import Ui_Dialog
-from modules.utils import check_or_load_gui_login, save_login, get_bool_matrix, MAPPINGS
+from modules.utils import check_or_load_gui_login, save_login, get_bool_matrix, MAPPINGS, BASE_URL_RE
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 
@@ -36,6 +37,7 @@ class LoginDialog(QDialog):
         self.ui.setupUi(self)
         self.ui.showKey.stateChanged.connect(self._toggle_key_visibility)
         self.ui.apiKeyInput.setEchoMode(QLineEdit.Password)
+        self.ui.urlInput.setValidator(QRegularExpressionValidator(QRegularExpression(BASE_URL_RE.pattern)))
 
     def _toggle_key_visibility(self) -> None:
         visible = self.ui.showKey.isChecked()
@@ -154,30 +156,15 @@ class MainWindow(QMainWindow):
     def _init_stickers_page(self) -> None:
         combo = self.ui.productCombo
         combo.setEditable(True)
-        combo.addItems([p["name"] for p in self.products])
+        items = [p["name"] for p in self.products]
+        combo.addItems(items)
         combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        completer = QCompleter(items, self)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        combo.setCompleter(completer)
+        combo.setEditText("")
 
         self.ui.generateStickersButton.clicked.connect(self._generate_stickers)
-
-    def _generate_stickers(self) -> None:
-        product_name = self.ui.productCombo.currentText()
-        if not product_name:
-            return
-
-        res = requests.get(
-            f"{self.url}/api/objects/products", params={"query[]": f"name={product_name}"}, headers=self.headers
-        )
-
-        try:
-            product_id = res.json()[0]["id"]
-        except (IndexError, KeyError):
-            QMessageBox.critical(self, "Error", f"Product not found: {product_name}")
-            return
-
-        outdir = self._outdir()
-        matrix = get_bool_matrix(product_id)
-        create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name)
-        self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Stickers PDF generated successfully.")
 
     def _init_list_page(self) -> None:
         self.ui.filterCheck.toggled.connect(self.ui.filterGroup.setVisible)
@@ -213,6 +200,11 @@ class MainWindow(QMainWindow):
         combo = QComboBox()
         for obj in objects:
             combo.addItem(obj["name"], obj["id"])
+        combo.setEditable(True)
+        completer = QCompleter([obj["name"] for obj in objects])
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        combo.setCompleter(completer)
+        combo.setEditText("")
         combo.currentIndexChanged.connect(self._reload_products)
         return combo
 
@@ -264,6 +256,26 @@ class MainWindow(QMainWindow):
             item = QListWidgetItem(prod["name"])
             item.setData(Qt.UserRole, idx)
             self.ui.productList.addItem(item)
+
+    def _generate_stickers(self) -> None:
+        product_name = self.ui.productCombo.currentText()
+        if not product_name:
+            return
+
+        res = requests.get(
+            f"{self.url}/api/objects/products", params={"query[]": f"name={product_name}"}, headers=self.headers
+        )
+
+        try:
+            product_id = res.json()[0]["id"]
+        except (IndexError, KeyError):
+            QMessageBox.critical(self, "Error", f"Product not found: {product_name}")
+            return
+
+        outdir = self._outdir()
+        matrix = get_bool_matrix(product_id)
+        create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name)
+        self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Stickers PDF generated successfully.")
 
     def _generate_list(self) -> None:
         selected = []
