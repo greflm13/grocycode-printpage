@@ -140,7 +140,7 @@ jobs:
           cd dist
               
           for d in GrocyCodePrintpage-*; do
-            zip -r "$d.zip" "$d/**"
+            zip -r "$d.zip" "$d/"*
           done
               
       - name: Create release
