@@ -7,7 +7,7 @@ on:
       - "*"
 
 jobs:
-  build:
+  desktop:
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
@@ -20,41 +20,53 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install Qt deploy tooling
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller
-          pip install -r requirements.txt
+          pip install pyside6 pyside6-deploy
 
-      - name: Build (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Build desktop app
         run: |
-          VERSION=$(cat .version)
-          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
-          pyinstaller gui.py \
-            -n grocycode-${VERSION}-${OS} \
-            -F \
-            --add-data ".version:." \
-            --add-data "assets:assets"
-
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          VERSION=$(cat .version)
-          pyinstaller gui.py modules/*.py \
-            -n grocycode-${VERSION}-windows \
-            -F \
-            --add-data ".version;." \
-            --add-data "assets;assets"
+          pyside6-deploy -c pysidedeploy.spec
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: grocycode-${{ runner.os }}
+          name: desktop-${{ runner.os }}
           path: dist/*
+  # android:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.11"
+
+  #     - name: Install Android deploy tooling
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install pyside6 pyside6-android-deploy buildozer qtpip
+
+  #     - name: Download PySide6 Android wheels
+  #       run: |
+  #         qtpip download PySide6 --android --arch aarch64
+  #         qtpip download shiboken6 --android --arch aarch64
+
+  #     - name: Build Android APK
+  #       run: |
+  #         pyside6-android-deploy --config-file pysidedeploy.spec --force
+
+  #     - name: Upload Android artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: android
+  #         path: "*.apk"
+
   release:
-    needs: build
+    # needs: [ desktop, android ]
+    needs: desktop
     runs-on: ubuntu-latest
 
     permissions:
@@ -69,6 +81,5 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          make_latest: true
           generate_release_notes: true
           files: dist/**

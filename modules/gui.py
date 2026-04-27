@@ -2,10 +2,15 @@
 
 import os
 import sys
+import json
 
-import requests
-
-from PySide6.QtCore import Qt, QUrl, QRegularExpression
+from PySide6.QtCore import (
+    Qt,
+    QUrl,
+    QRegularExpression,
+    QObject,
+    QEventLoop,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -19,15 +24,86 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 from PySide6.QtGui import QIcon, QDesktopServices, QRegularExpressionValidator
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
 from grocycode import create_codepage
 from codesheet import create_codesheet
 from modules.main_window import Ui_MainWindow
 from modules.config_window import Ui_Dialog
-from modules.utils import check_or_load_gui_login, save_login, get_bool_matrix, MAPPINGS, BASE_URL_RE, __version__
+from modules.utils import (
+    check_or_load_gui_login,
+    save_login,
+    get_bool_matrix,
+    MAPPINGS,
+    BASE_URL_RE,
+    __version__,
+)
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 APP_ICON = QIcon(os.path.join(SCRIPTDIR, "assets", "icon.svg"))
+
+
+class ApiClient(QObject):
+    def __init__(self, base_url: str, headers: dict, parent=None):
+        super().__init__(parent)
+        self.base_url = base_url.rstrip("/")
+        self.headers = headers
+        self.net = QNetworkAccessManager(self)
+
+    def get(self, path: str, *, query=None, callback=None):
+        url = QUrl(self.base_url + path)
+
+        if query:
+            if isinstance(query.get("query[]"), list):
+                url.setQuery("&".join(f"query[]={q}" for q in query["query[]"]))
+            else:
+                url.setQuery("&".join(f"{k}={v}" for k, v in query.items()))
+
+        request = QNetworkRequest(url)
+        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+
+        for k, v in self.headers.items():
+            request.setRawHeader(k.encode(), v.encode())
+
+        reply = self.net.get(request)
+
+        def finished():
+            if reply.error() != QNetworkReply.NetworkError.NoError:
+                QMessageBox.critical(
+                    None,
+                    "Network error",
+                    f"{reply.errorString()}",
+                )
+                reply.deleteLater()
+                return
+
+            status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+            if status is not None and int(status) >= 400:
+                QMessageBox.critical(
+                    None,
+                    "HTTP error",
+                    f"Server returned HTTP {status}",
+                )
+                reply.deleteLater()
+                return
+
+            try:
+                data = json.loads(bytes(reply.readAll()))
+            except json.JSONDecodeError:
+                QMessageBox.critical(
+                    None,
+                    "Error",
+                    "Invalid JSON response from server",
+                )
+                reply.deleteLater()
+                return
+
+            if callback:
+                callback(data)
+
+            reply.deleteLater()
+
+        reply.finished.connect(finished)
 
 
 class LoginDialog(QDialog):
@@ -37,6 +113,7 @@ class LoginDialog(QDialog):
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowIcon(APP_ICON)
+
         self.ui.showKey.stateChanged.connect(self._toggle_key_visibility)
         self.ui.apiKeyInput.setEchoMode(QLineEdit.Password)
         self.ui.urlInput.setValidator(QRegularExpressionValidator(QRegularExpression(BASE_URL_RE.pattern)))
@@ -72,25 +149,108 @@ class MainWindow(QMainWindow):
                 sys.exit(1)
 
         self.headers = {
-            "accept": "application/json",
             "GROCY-API-KEY": self.api_key,
         }
 
-        res = requests.get(
-            self.url + "/api/objects/products",
-            headers=self.headers,
+        self.api = ApiClient(self.url, self.headers, self)
+
+        self.api.get(
+            "/api/objects/products",
+            callback=lambda data: self._on_products_loaded(data),
         )
-        self.products = sorted(res.json(), key=lambda x: x["name"])
 
         self.ui.actionConfig.triggered.connect(self._show_login_dialog)
         self.ui.actionInfo.triggered.connect(self._show_info_dialog)
 
         self._init_type_selection()
+        self._init_output_directory()
+        self.ui.flowStack.setCurrentIndex(0)
+
+    def _on_products_loaded(self, data):
+        self.products = sorted(data, key=lambda x: x["name"])
         self._init_stickers_page()
         self._init_list_page()
-        self._init_output_directory()
 
-        self.ui.flowStack.setCurrentIndex(0)
+    def _on_filter_objects_loaded(self, filt, data):
+        objects = sorted(data, key=lambda x: x["name"])
+        combo = self._create_combo(objects)
+        self.ui.filterValuesLayout.addRow(f"{filt}:", combo)
+        self._reload_products()
+
+    def _on_filtered_products_loaded(self, data):
+        self.filtered_products = sorted(data, key=lambda x: x.get("name", ""))
+        self._populate_product_list()
+
+    def _on_sticker_product_loaded(self, product_name, data):
+        try:
+            product_id = data[0]["id"]
+        except (IndexError, KeyError):
+            QMessageBox.critical(self, "Error", f"Product not found: {product_name}")
+            return
+
+        outdir = self._outdir()
+        matrix = get_bool_matrix(product_id)
+        create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name)
+        self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Stickers PDF generated successfully.")
+
+    def _show_login_dialog(self) -> bool:
+        curr_api_key, curr_url = check_or_load_gui_login()
+
+        while True:
+            dialog = LoginDialog(self)
+            dialog.ui.apiKeyInput.setText(curr_api_key)
+            dialog.ui.urlInput.setText(curr_url)
+
+            if not dialog.exec():
+                return False
+
+            api_key, url, save = dialog.get_values()
+            curr_api_key, curr_url = api_key, url
+
+            if not api_key or not url:
+                QMessageBox.warning(
+                    self,
+                    "Invalid input",
+                    "Both API key and server URL are required.",
+                )
+                continue
+
+            mgr = QNetworkAccessManager(self)
+            req = QNetworkRequest(QUrl(url + "/api/system/info"))
+            req.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+            req.setRawHeader(b"GROCY-API-KEY", api_key.encode())
+
+            reply = mgr.get(req)
+            loop = QEventLoop()
+            reply.finished.connect(loop.quit)
+            loop.exec()
+
+            if reply.error() != QNetworkReply.NetworkError.NoError:
+                QMessageBox.critical(
+                    self,
+                    "Connection failed",
+                    reply.errorString(),
+                )
+                reply.deleteLater()
+                continue
+
+            status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+            if status is not None and int(status) != 200:
+                QMessageBox.critical(
+                    self,
+                    "Connection failed",
+                    f"Server returned HTTP {status}",
+                )
+                reply.deleteLater()
+                continue
+
+            reply.deleteLater()
+
+            self.api_key, self.url = api_key, url
+            if save:
+                save_login(api_key, url)
+
+            return True
 
     def _show_info_dialog(self) -> None:
         QMessageBox.about(
@@ -103,41 +263,6 @@ class MainWindow(QMainWindow):
             """,
         )
 
-    def _show_login_dialog(self) -> bool:
-        curr_api_key, curr_url = check_or_load_gui_login()
-        while True:
-            dialog = LoginDialog(self)
-            dialog.ui.apiKeyInput.setText(curr_api_key)
-            dialog.ui.urlInput.setText(curr_url)
-
-            if not dialog.exec():
-                return False
-
-            api_key, url, save = dialog.get_values()
-            curr_api_key = api_key
-            curr_url = url
-
-            if not api_key or not url:
-                QMessageBox.warning(self, "Invalid input", "Both API key and server URL are required.")
-                continue
-
-            try:
-                res = requests.get(url + "/api/system/info", headers={"GROCY-API-KEY": api_key}, timeout=5)
-                if res.status_code != 200:
-                    QMessageBox.critical(self, "Connection failed", "API key is invalid.")
-                    continue
-            except requests.RequestException:
-                QMessageBox.critical(self, "Connection failed", "URL is invalid.")
-                continue
-
-            self.api_key = api_key
-            self.url = url
-
-            if save:
-                save_login(api_key, url)
-
-            return True
-
     def _init_output_directory(self) -> None:
         default_output = os.path.join(os.getcwd(), "output")
         os.makedirs(default_output, exist_ok=True)
@@ -147,14 +272,10 @@ class MainWindow(QMainWindow):
         self.ui.outputDirChooser.clicked.connect(self._select_output_directory)
 
     def _select_output_directory(self) -> None:
-        current = self.ui.outputDir.text()
-
-        directory = QFileDialog.getExistingDirectory(self, "Select Output Directory", current)
-        if not directory:
-            return
-
-        self.ui.outputDir.setText(directory)
-        os.makedirs(directory, exist_ok=True)
+        directory = QFileDialog.getExistingDirectory(self, "Select Output Directory", self.ui.outputDir.text())
+        if directory:
+            self.ui.outputDir.setText(directory)
+            os.makedirs(directory, exist_ok=True)
 
     def _outdir(self) -> str:
         return self.ui.outputDir.text()
@@ -183,8 +304,7 @@ class MainWindow(QMainWindow):
 
     def _init_list_page(self) -> None:
         self.ui.filterCheck.toggled.connect(self.ui.filterGroup.setVisible)
-
-        for key in MAPPINGS.keys():
+        for key in MAPPINGS:
             QListWidgetItem(key, self.ui.filterList)
 
         self.ui.filterList.itemSelectionChanged.connect(self._update_filter_value_inputs)
@@ -201,15 +321,10 @@ class MainWindow(QMainWindow):
 
         for item in self.ui.filterList.selectedItems():
             filt = item.text()
-
-            res = requests.get(f"{self.url}/api/objects/{MAPPINGS[filt][0]}", headers=self.headers)
-
-            objects = sorted(res.json(), key=lambda x: x["name"])
-
-            combo = self._create_combo(objects)
-            layout.addRow(f"{filt}:", combo)
-
-        self._reload_products()
+            self.api.get(
+                f"/api/objects/{MAPPINGS[filt][0]}",
+                callback=lambda data, f=filt: self._on_filter_objects_loaded(f, data),
+            )
 
     def _create_combo(self, objects) -> QComboBox:
         combo = QComboBox()
@@ -249,20 +364,11 @@ class MainWindow(QMainWindow):
             self._populate_product_list()
             return
 
-        res = requests.get(
-            f"{self.url}/api/objects/products", params=[("query[]", q) for q in queries], headers=self.headers
+        self.api.get(
+            "/api/objects/products",
+            query={"query[]": queries},
+            callback=lambda data: self._on_filtered_products_loaded(data),
         )
-
-        data = res.json()
-
-        if not isinstance(data, list):
-            self.filtered_products = []
-            self._populate_product_list()
-            return
-
-        self.filtered_products = sorted(data, key=lambda x: x.get("name", ""))
-
-        self._populate_product_list()
 
     def _populate_product_list(self) -> None:
         self.ui.productList.clear()
@@ -277,20 +383,11 @@ class MainWindow(QMainWindow):
         if not product_name:
             return
 
-        res = requests.get(
-            f"{self.url}/api/objects/products", params={"query[]": f"name={product_name}"}, headers=self.headers
+        self.api.get(
+            "/api/objects/products",
+            query={"query[]": f"name={product_name}"},
+            callback=lambda data, n=product_name: self._on_sticker_product_loaded(n, data),
         )
-
-        try:
-            product_id = res.json()[0]["id"]
-        except (IndexError, KeyError):
-            QMessageBox.critical(self, "Error", f"Product not found: {product_name}")
-            return
-
-        outdir = self._outdir()
-        matrix = get_bool_matrix(product_id)
-        create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name)
-        self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Stickers PDF generated successfully.")
 
     def _generate_list(self) -> None:
         selected = []
