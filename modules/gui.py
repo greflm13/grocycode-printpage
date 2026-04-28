@@ -14,7 +14,6 @@ from PySide6.QtCore import (
     QEventLoop,
 )
 from PySide6.QtWidgets import (
-    QApplication,
     QComboBox,
     QCompleter,
     QDialog,
@@ -25,25 +24,26 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
 )
-from PySide6.QtGui import QIcon, QDesktopServices, QRegularExpressionValidator, QFontDatabase
+from PySide6.QtGui import QIcon, QDesktopServices, QRegularExpressionValidator
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
+import ui.resources_rc # noqa: F401
 from grocycode import create_codepage
 from codesheet import create_codesheet
-from modules.main_window import Ui_MainWindow
-from modules.config_window import Ui_Dialog
+from ui.main_window import Ui_MainWindow
+from ui.config_window import Ui_Dialog
 from modules.utils import (
     check_or_load_gui_login,
     save_login,
     get_bool_matrix,
     find_system_font_file,
+    get_version,
     MAPPINGS,
     BASE_URL_RE,
-    get_version,
 )
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
-APP_ICON = QIcon(os.path.join(SCRIPTDIR, "assets", "icon.svg"))
+APP_ICON = QIcon(":/assets/icon.svg")
 
 
 class ApiClient(QObject):
@@ -433,14 +433,3 @@ class MainWindow(QMainWindow):
 
         if msg.clickedButton() == open_button:
             QDesktopServices.openUrl(QUrl.fromLocalFile(pdf_path))
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app.setApplicationVersion(get_version())
-    app.setWindowIcon(APP_ICON)
-
-    window = MainWindow()
-    window.show()
-
-    sys.exit(app.exec())
