@@ -2,7 +2,8 @@
 import os
 import argparse
 
-import requests
+if __name__ == "__main__":
+    import requests
 
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen.canvas import Canvas
