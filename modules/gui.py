@@ -405,6 +405,8 @@ class MainWindow(QMainWindow):
         self.ui.generateStickersButton.setDisabled(True)
         product_name = self.ui.productCombo.currentText()
         if not product_name:
+            QMessageBox.warning(self, self.tr("Product missing"), self.tr("Please select product to generate stickers for."))
+            self.ui.generateStickersButton.setDisabled(False)
             return
 
         self.api.get(
@@ -422,6 +424,8 @@ class MainWindow(QMainWindow):
             selected.append(self.filtered_products[idx])
 
         if not selected:
+            QMessageBox.warning(self, self.tr("Product(s) missing"), self.tr("Please select product(s) to generate list for."))
+            self.ui.generateListButton.setDisabled(False)
             return
 
         outdir = self._outdir()
