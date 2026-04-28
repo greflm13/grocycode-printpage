@@ -62,7 +62,6 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.fontComboBox = QFontComboBox(self.fontGroup)
         self.fontComboBox.setObjectName(u"fontComboBox")
-        self.fontComboBox.setCurrentText(u"")
 
         self.verticalLayout.addWidget(self.fontComboBox)
 

@@ -52,11 +52,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QFontComboBox" name="fontComboBox">
-         <property name="currentText">
-          <string notr="true"/>
-         </property>
-        </widget>
+        <widget class="QFontComboBox" name="fontComboBox"/>
        </item>
       </layout>
      </widget>
