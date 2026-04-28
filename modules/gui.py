@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QIcon, QDesktopServices, QRegularExpressionValidator
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
-import ui.resources_rc # noqa: F401
+import ui.resources_rc  # noqa: F401
 from grocycode import create_codepage
 from codesheet import create_codesheet
 from ui.main_window import Ui_MainWindow
@@ -74,7 +74,7 @@ class ApiClient(QObject):
             if reply.error() != QNetworkReply.NetworkError.NoError:
                 QMessageBox.critical(
                     None,
-                    "Network error",
+                    self.tr("Network error"),
                     f"{reply.errorString()}",
                 )
                 reply.deleteLater()
@@ -84,7 +84,7 @@ class ApiClient(QObject):
             if status is not None and int(status) >= 400:
                 QMessageBox.critical(
                     None,
-                    "HTTP error",
+                    self.tr("HTTP error"),
                     f"Server returned HTTP {status}",
                 )
                 reply.deleteLater()
@@ -95,7 +95,7 @@ class ApiClient(QObject):
             except json.JSONDecodeError:
                 QMessageBox.critical(
                     None,
-                    "Error",
+                    self.tr("Error"),
                     "Invalid JSON response from server",
                 )
                 reply.deleteLater()
@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
 
         if not self.api_key or not self.url:
             if not self._show_login_dialog():
-                QMessageBox.critical(self, "Error", "API key and server URL are required.")
+                QMessageBox.critical(self, self.tr("Error"), self.tr("API key and server URL are required."))
                 sys.exit(1)
 
         self.headers = {
@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
         try:
             product_id = data[0]["id"]
         except (IndexError, KeyError):
-            QMessageBox.critical(self, "Error", f"Product not found: {product_name}")
+            QMessageBox.critical(self, self.tr("Error"), self.tr(f"Product not found: {product_name}"))
             return
 
         outdir = self._outdir()
@@ -214,8 +214,8 @@ class MainWindow(QMainWindow):
             if not api_key or not url:
                 QMessageBox.warning(
                     self,
-                    "Invalid input",
-                    "Both API key and server URL are required.",
+                    self.tr("Invalid input"),
+                    self.tr("Both API key and server URL are required."),
                 )
                 continue
 
@@ -232,7 +232,7 @@ class MainWindow(QMainWindow):
             if reply.error() != QNetworkReply.NetworkError.NoError:
                 QMessageBox.critical(
                     self,
-                    "Connection failed",
+                    self.tr("Connection failed"),
                     reply.errorString(),
                 )
                 reply.deleteLater()
@@ -242,8 +242,8 @@ class MainWindow(QMainWindow):
             if status is not None and int(status) != 200:
                 QMessageBox.critical(
                     self,
-                    "Connection failed",
-                    f"Server returned HTTP {status}",
+                    self.tr("Connection failed"),
+                    self.tr(f"Server returned HTTP {status}"),
                 )
                 reply.deleteLater()
                 continue
@@ -259,12 +259,12 @@ class MainWindow(QMainWindow):
     def _show_info_dialog(self) -> None:
         QMessageBox.about(
             self,
-            "About GrocyCode Printpage",
-            f"""
+            self.tr("About GrocyCode Printpage"),
+            self.tr(f"""
             <b>GrocyCode Printpage</b><br>
             Version: {get_version()}<br><br>
             Generates sticker and codesheet PDFs for Grocy.
-            """,
+            """),
         )
 
     def _change_font(self) -> None:
@@ -422,12 +422,12 @@ class MainWindow(QMainWindow):
 
     def _show_pdf_done_dialog(self, pdf_path: str, title: str):
         msg = QMessageBox(self)
-        msg.setWindowTitle("Done")
+        msg.setWindowTitle(self.tr("Done"))
         msg.setText(title)
         msg.setIcon(QMessageBox.Icon.Information)
 
-        open_button = msg.addButton("Open PDF", QMessageBox.ButtonRole.AcceptRole)
-        msg.addButton("Close", QMessageBox.ButtonRole.RejectRole)
+        open_button = msg.addButton(self.tr("Open PDF"), QMessageBox.ButtonRole.AcceptRole)
+        msg.addButton(self.tr("Close"), QMessageBox.ButtonRole.RejectRole)
 
         msg.exec()
 
