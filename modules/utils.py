@@ -2,11 +2,11 @@ import os
 import re
 import sys
 import json
+import builtins
 import subprocess
 
 from enum import Enum
 from functools import lru_cache
-from importlib.metadata import version, PackageNotFoundError
 
 
 from ppf.datamatrix import DataMatrix
@@ -47,10 +47,19 @@ class PageLayout(Enum):
 
 
 def get_version() -> str:
+    if hasattr(builtins, "APP_VERSION"):
+        return builtins.APP_VERSION
+
     try:
-        return version("grocycode-printpage")
-    except PackageNotFoundError:
+        import tomllib
+
+        pyproject = os.path.join(SCRIPTDIR, "pyproject.toml")
+        with open(pyproject, "rb") as f:
+            return tomllib.load(f)["project"]["version"]
+    except Exception:
         return "dev"
+
+    return "dev"
 
 
 @lru_cache(maxsize=128)
