@@ -18,7 +18,7 @@ project_file = pyproject.toml
 # application icon
 icon = assets/icon.ico
 
-extra_data_files = .version
+extra_data_files = assets/FiraSans-Black.ttf
 
 [python]
 
