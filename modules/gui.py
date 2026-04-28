@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+import hashlib
 
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -196,7 +197,7 @@ class MainWindow(QMainWindow):
 
         outdir = self._outdir()
         matrix = get_bool_matrix(product_id)
-        create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name)
+        create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name, self.currentFont)
         self._show_pdf_done_dialog(os.path.join(outdir, product_name + ".pdf"), "Stickers PDF generated successfully.")
         self.ui.generateStickersButton.setDisabled(False)
 
@@ -279,9 +280,11 @@ class MainWindow(QMainWindow):
 
         font_path = find_system_font_file(family, bold, italic)
 
-        pdf_font_name = "header"
+        key = f"{font_path}".encode()
+        font_id = hashlib.md5(key).hexdigest()[:8]
+        self.currentFont = font_id
 
-        pdfmetrics.registerFont(TTFont(pdf_font_name, font_path))
+        pdfmetrics.registerFont(TTFont(font_id, font_path))
 
     def _init_output_directory(self) -> None:
         default_output = os.path.join(os.getcwd(), "output")
@@ -422,7 +425,7 @@ class MainWindow(QMainWindow):
             return
 
         outdir = self._outdir()
-        create_codesheet(selected, os.path.join(outdir, "codesheet.pdf"))
+        create_codesheet(selected, os.path.join(outdir, "codesheet.pdf"), self.currentFont)
         self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Codesheet PDF generated successfully.")
         self.ui.generateListButton.setDisabled(False)
 

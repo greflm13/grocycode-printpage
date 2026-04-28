@@ -26,7 +26,7 @@ from modules.utils import (
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 
 
-def create_codesheet(layout: list[dict], filename: str) -> None:
+def create_codesheet(layout: list[dict], filename: str, font: str = "header") -> None:
     pagesize = pagesizes.portrait(pagesizes.A4)
     pdf = Canvas(filename, pagesize=pagesize)
 
@@ -34,13 +34,13 @@ def create_codesheet(layout: list[dict], filename: str) -> None:
     scale_y = pagesize[1] / PageLayout.PAGE_HEIGHT.value
     pdf.scale(scale_x, scale_y)
 
-    pdf.setFont("header", 24)
+    pdf.setFont(font, 24)
     pdf.setFillColor(colors.black)
 
-    def start_new_page(pdf):
+    def start_new_page(pdf: Canvas):
         pdf.showPage()
         pdf.scale(scale_x, scale_y)
-        pdf.setFont("header", 24)
+        pdf.setFont(font, 24)
         pdf.setFillColor(colors.black)
 
     row = 0

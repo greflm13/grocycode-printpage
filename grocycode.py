@@ -22,7 +22,7 @@ from modules.utils import (
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 
 
-def create_codepage(matrix: list[bool], filename: str, product_name) -> None:
+def create_codepage(matrix: list[bool], filename: str, product_name: str, font: str = "header") -> None:
     pagesize = pagesizes.portrait(pagesizes.A4)
     pdf = Canvas(filename, pagesize=pagesize)
 
@@ -30,7 +30,7 @@ def create_codepage(matrix: list[bool], filename: str, product_name) -> None:
     scale_y = pagesize[1] / PageLayout.PAGE_HEIGHT.value
     pdf.scale(scale_x, scale_y)
 
-    pdf.setFont("header", 48)
+    pdf.setFont(font, 48)
     pdf.setFillColor(colors.black)
     pdf.drawCentredString(x=2100 / 2, y=2880, text=product_name)
     pdf.setTitle(product_name)
