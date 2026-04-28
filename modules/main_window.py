@@ -17,16 +17,16 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
-    QFormLayout, QGroupBox, QHBoxLayout, QLabel,
-    QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
-    QPushButton, QSizePolicy, QSpacerItem, QStackedWidget,
-    QToolBar, QVBoxLayout, QWidget)
+    QFontComboBox, QFormLayout, QGroupBox, QHBoxLayout,
+    QLabel, QLineEdit, QListWidget, QListWidgetItem,
+    QMainWindow, QPushButton, QSizePolicy, QSpacerItem,
+    QStackedWidget, QToolBar, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(487, 437)
+        MainWindow.resize(487, 445)
         self.actionConfig = QAction(MainWindow)
         self.actionConfig.setObjectName(u"actionConfig")
         self.actionConfig.setMenuRole(QAction.MenuRole.PreferencesRole)
@@ -55,6 +55,19 @@ class Ui_MainWindow(object):
 
 
         self.mainLayout.addWidget(self.typeGroup)
+
+        self.fontGroup = QGroupBox(self.centralwidget)
+        self.fontGroup.setObjectName(u"fontGroup")
+        self.verticalLayout = QVBoxLayout(self.fontGroup)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.fontComboBox = QFontComboBox(self.fontGroup)
+        self.fontComboBox.setObjectName(u"fontComboBox")
+        self.fontComboBox.setCurrentText(u"")
+
+        self.verticalLayout.addWidget(self.fontComboBox)
+
+
+        self.mainLayout.addWidget(self.fontGroup)
 
         self.outputGroup = QGroupBox(self.centralwidget)
         self.outputGroup.setObjectName(u"outputGroup")
@@ -180,6 +193,7 @@ class Ui_MainWindow(object):
         self.typeCombo.setItemText(0, QCoreApplication.translate("MainWindow", u"Stickers", None))
         self.typeCombo.setItemText(1, QCoreApplication.translate("MainWindow", u"List", None))
 
+        self.fontGroup.setTitle(QCoreApplication.translate("MainWindow", u"Font", None))
         self.outputGroup.setTitle(QCoreApplication.translate("MainWindow", u"Output Directory", None))
         self.outputDirChooser.setText(QCoreApplication.translate("MainWindow", u"Browse...", None))
         self.label1.setText(QCoreApplication.translate("MainWindow", u"Product", None))

@@ -1,8 +1,11 @@
 import os
 import re
+import sys
 import json
+import subprocess
 
 from enum import Enum
+from functools import lru_cache
 from importlib.metadata import version, PackageNotFoundError
 
 
@@ -48,6 +51,60 @@ def get_version() -> str:
         return version("grocycode-printpage")
     except PackageNotFoundError:
         return "dev"
+
+
+@lru_cache(maxsize=128)
+def find_system_font_file(family: str, bold: bool, italic: bool) -> str:
+    """
+    Locate a system font file matching the requested family/style.
+    Returns a path to a .ttf / .otf file.
+    """
+
+    if sys.platform.startswith("linux"):
+        style = "Bold" if bold else "Regular"
+        if italic:
+            style = f"{style} Italic"
+
+        result = subprocess.run(
+            ["fc-match", "-f", "%{file}", f"{family}:style={style}"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+
+    if sys.platform.startswith("win"):
+        import winreg
+
+        fonts_dir = os.path.join(os.environ["WINDIR"], "Fonts")
+        reg_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path) as key:
+            for i in range(winreg.QueryInfoKey(key)[1]):
+                name, value, _ = winreg.EnumValue(key, i)
+                if family.lower() in name.lower():
+                    return os.path.join(fonts_dir, value)
+
+        raise RuntimeError(f"Font not found: {family}")
+
+    if sys.platform == "darwin":
+        result = subprocess.run(
+            ["system_profiler", "SPFontsDataType", "-json"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=True,
+        )
+
+        data = json.loads(result.stdout)
+        for item in data.get("SPFontsDataType", []):
+            if family.lower() in item.get("_name", "").lower():
+                return item["path"]
+
+        raise RuntimeError(f"Font not found: {family}")
+
+    raise RuntimeError("Unsupported platform")
 
 
 def get_bool_matrix(data) -> list[bool]:

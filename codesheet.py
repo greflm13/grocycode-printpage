@@ -25,8 +25,6 @@ from modules.utils import (
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 
-pdfmetrics.registerFont(TTFont("header", "FiraSans-Black.ttf"))
-
 
 def create_codesheet(layout: list[dict], filename: str) -> None:
     pagesize = pagesizes.portrait(pagesizes.A4)
@@ -109,6 +107,7 @@ def argparser() -> argparse.Namespace:
 
 
 def main() -> None:
+    pdfmetrics.registerFont(TTFont("header", "FiraSans-Black.ttf"))
     args = argparser()
     os.makedirs(args.output, exist_ok=True)
 

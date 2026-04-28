@@ -4,6 +4,8 @@ import os
 import sys
 import json
 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from PySide6.QtCore import (
     Qt,
     QUrl,
@@ -23,7 +25,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
 )
-from PySide6.QtGui import QIcon, QDesktopServices, QRegularExpressionValidator
+from PySide6.QtGui import QIcon, QDesktopServices, QRegularExpressionValidator, QFontDatabase
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
 from grocycode import create_codepage
@@ -34,6 +36,7 @@ from modules.utils import (
     check_or_load_gui_login,
     save_login,
     get_bool_matrix,
+    find_system_font_file,
     MAPPINGS,
     BASE_URL_RE,
     get_version,
@@ -159,6 +162,7 @@ class MainWindow(QMainWindow):
             callback=lambda data: self._on_products_loaded(data),
         )
 
+        self.ui.fontComboBox.currentFontChanged.connect(self._change_font)
         self.ui.actionConfig.triggered.connect(self._show_login_dialog)
         self.ui.actionInfo.triggered.connect(self._show_info_dialog)
 
@@ -262,6 +266,19 @@ class MainWindow(QMainWindow):
             Generates sticker and codesheet PDFs for Grocy.
             """,
         )
+
+    def _change_font(self) -> None:
+        font = self.ui.fontComboBox.currentFont()
+
+        family = font.family()
+        bold = font.bold()
+        italic = font.italic()
+
+        font_path = find_system_font_file(family, bold, italic)
+
+        pdf_font_name = "header"
+
+        pdfmetrics.registerFont(TTFont(pdf_font_name, font_path))
 
     def _init_output_directory(self) -> None:
         default_output = os.path.join(os.getcwd(), "output")

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>487</width>
-    <height>437</height>
+    <height>445</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -40,6 +40,22 @@
            <string>List</string>
           </property>
          </item>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="fontGroup">
+      <property name="title">
+       <string>Font</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QFontComboBox" name="fontComboBox">
+         <property name="currentText">
+          <string notr="true"/>
+         </property>
         </widget>
        </item>
       </layout>
