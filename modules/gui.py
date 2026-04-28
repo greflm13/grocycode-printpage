@@ -166,6 +166,7 @@ class MainWindow(QMainWindow):
         self.ui.actionConfig.triggered.connect(self._show_login_dialog)
         self.ui.actionInfo.triggered.connect(self._show_info_dialog)
 
+        self._change_font()
         self._init_type_selection()
         self._init_output_directory()
         self.ui.flowStack.setCurrentIndex(0)
@@ -174,6 +175,7 @@ class MainWindow(QMainWindow):
         self.products = sorted(data, key=lambda x: x["name"])
         self._init_stickers_page()
         self._init_list_page()
+        self._reload_products()
 
     def _on_filter_objects_loaded(self, filt, data):
         objects = sorted(data, key=lambda x: x["name"])
@@ -195,7 +197,8 @@ class MainWindow(QMainWindow):
         outdir = self._outdir()
         matrix = get_bool_matrix(product_id)
         create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name)
-        self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Stickers PDF generated successfully.")
+        self._show_pdf_done_dialog(os.path.join(outdir, product_name + ".pdf"), "Stickers PDF generated successfully.")
+        self.ui.generateStickersButton.setDisabled(False)
 
     def _show_login_dialog(self) -> bool:
         curr_api_key, curr_url = check_or_load_gui_login()
@@ -396,6 +399,7 @@ class MainWindow(QMainWindow):
             self.ui.productList.addItem(item)
 
     def _generate_stickers(self) -> None:
+        self.ui.generateStickersButton.setDisabled(True)
         product_name = self.ui.productCombo.currentText()
         if not product_name:
             return
@@ -407,6 +411,7 @@ class MainWindow(QMainWindow):
         )
 
     def _generate_list(self) -> None:
+        self.ui.generateListButton.setDisabled(True)
         selected = []
 
         for item in self.ui.productList.selectedItems():
@@ -419,6 +424,7 @@ class MainWindow(QMainWindow):
         outdir = self._outdir()
         create_codesheet(selected, os.path.join(outdir, "codesheet.pdf"))
         self._show_pdf_done_dialog(os.path.join(outdir, "codesheet.pdf"), "Codesheet PDF generated successfully.")
+        self.ui.generateListButton.setDisabled(False)
 
     def _show_pdf_done_dialog(self, pdf_path: str, title: str):
         msg = QMessageBox(self)
