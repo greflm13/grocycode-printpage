@@ -110,6 +110,12 @@ jobs:
           python -m venv venv
           mkdir dist
 
+      - name: Generate version module
+        shell: bash
+        run: |+
+          VERSION="${{ needs.version.outputs.prev }}"
+          echo "APP_VERSION = \"$VERSION\"" > modules/_version.py
+
       - name: Install dependencies (Unix)
         if: runner.os != 'Windows'
         shell: bash

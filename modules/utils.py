@@ -2,15 +2,18 @@ import os
 import re
 import sys
 import json
-import builtins
 import subprocess
 
 from enum import Enum
 from functools import lru_cache
 
-
 from ppf.datamatrix import DataMatrix
 from reportlab.lib import colors
+
+try:
+    from modules._version import APP_VERSION
+except Exception:
+    APP_VERSION = None
 
 _OPERATORS = ["!=", "!~", "<=", ">=", "=", "<", ">", "~", "§"]
 _OP_PATTERN = "|".join(map(re.escape, _OPERATORS))
@@ -47,8 +50,8 @@ class PageLayout(Enum):
 
 
 def get_version() -> str:
-    if hasattr(builtins, "APP_VERSION"):
-        return builtins.APP_VERSION
+    if APP_VERSION:
+        return APP_VERSION
 
     try:
         import tomllib

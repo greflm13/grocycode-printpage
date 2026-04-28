@@ -68,7 +68,7 @@ macos.permissions =
 mode = onefile
 
 # specify any extra nuitka arguments
-extra_args = --quiet --noinclude-qt-translations --static-libpython=no --assume-yes-for-downloads --define=APP_VERSION=${APP_VERSION}
+extra_args = --quiet --noinclude-qt-translations --static-libpython=no --assume-yes-for-downloads
 
 [buildozer]
 
