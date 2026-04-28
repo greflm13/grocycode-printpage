@@ -84,10 +84,6 @@ jobs:
             os: macos
             arch: arm64
 
-          - runner: macos-13
-            os: macos
-            arch: x64
-
     runs-on: ${{ matrix.runner }}
     env:
       APP_VERSION: ${{ needs.version.outputs.prev }}
