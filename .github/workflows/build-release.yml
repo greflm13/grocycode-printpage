@@ -72,12 +72,16 @@ jobs:
             os: linux
             arch: x64
 
-          - runner: ubuntu-24.04-arm
+          - runner: ubuntu-latest
             os: linux
             arch: arm64
 
           - runner: windows-latest
             os: windows
+            arch: x64
+
+          - runner: macos-latest
+            os: macos
             arch: x64
 
           - runner: macos-latest
