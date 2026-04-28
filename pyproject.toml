@@ -33,5 +33,5 @@ grocycode-printpage = "main:main"
 packages = []
 
 [tool.pyside6-project]
-files = ["main.py", "modules", "assets"]
+files = ["main.py", "modules", "assets", "ui", "i18n"]
 exclude = ["dist", "output"]
