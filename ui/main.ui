@@ -200,6 +200,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionConfig"/>
+   <addaction name="actionBarcode"/>
    <addaction name="actionInfo"/>
   </widget>
   <action name="actionConfig">
@@ -216,6 +217,17 @@
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::AboutRole</enum>
+   </property>
+  </action>
+  <action name="actionBarcode">
+   <property name="text">
+    <string>Barcode</string>
+   </property>
+   <property name="toolTip">
+    <string>Barcode Amount Remover</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::ApplicationSpecificRole</enum>
    </property>
   </action>
  </widget>

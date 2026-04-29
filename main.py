@@ -4,6 +4,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTranslator, QLibraryInfo, QLocale
 
+import ui.resources_rc  # noqa: F401
 from modules.utils import get_version
 from modules.gui import MainWindow, APP_ICON
 

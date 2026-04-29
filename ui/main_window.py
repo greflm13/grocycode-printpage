@@ -33,6 +33,9 @@ class Ui_MainWindow(object):
         self.actionInfo = QAction(MainWindow)
         self.actionInfo.setObjectName(u"actionInfo")
         self.actionInfo.setMenuRole(QAction.MenuRole.AboutRole)
+        self.actionBarcode = QAction(MainWindow)
+        self.actionBarcode.setObjectName(u"actionBarcode")
+        self.actionBarcode.setMenuRole(QAction.MenuRole.ApplicationSpecificRole)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.mainLayout = QVBoxLayout(self.centralwidget)
@@ -173,6 +176,7 @@ class Ui_MainWindow(object):
         MainWindow.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolBar)
 
         self.toolBar.addAction(self.actionConfig)
+        self.toolBar.addAction(self.actionBarcode)
         self.toolBar.addAction(self.actionInfo)
 
         self.retranslateUi(MainWindow)
@@ -187,6 +191,10 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"GrocyCode Printpage", None))
         self.actionConfig.setText(QCoreApplication.translate("MainWindow", u"Config", None))
         self.actionInfo.setText(QCoreApplication.translate("MainWindow", u"Info", None))
+        self.actionBarcode.setText(QCoreApplication.translate("MainWindow", u"Barcode", None))
+#if QT_CONFIG(tooltip)
+        self.actionBarcode.setToolTip(QCoreApplication.translate("MainWindow", u"Barcode Amount Remover", None))
+#endif // QT_CONFIG(tooltip)
         self.typeGroup.setTitle(QCoreApplication.translate("MainWindow", u"PDF Type", None))
         self.label0.setText(QCoreApplication.translate("MainWindow", u"Which type of pdf do you want to generate?", None))
         self.typeCombo.setItemText(0, QCoreApplication.translate("MainWindow", u"Stickers", None))

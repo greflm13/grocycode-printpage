@@ -10,9 +10,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 from PySide6.QtCore import (
     Qt,
     QUrl,
-    QRegularExpression,
     QObject,
+    QByteArray,
     QEventLoop,
+    QRegularExpression,
+    QAbstractTableModel,
 )
 from PySide6.QtWidgets import (
     QComboBox,
@@ -33,8 +35,10 @@ from grocycode import create_codepage
 from codesheet import create_codesheet
 from ui.main_window import Ui_MainWindow
 from ui.config_window import Ui_Dialog
+from ui.barcode_window import Ui_BarcodeAmountRemover
 from modules.utils import (
     check_or_load_gui_login,
+    index_by_key,
     save_login,
     get_bool_matrix,
     find_system_font_file,
@@ -45,6 +49,46 @@ from modules.utils import (
 
 SCRIPTDIR = os.path.dirname(os.path.realpath(__file__)).removesuffix(__package__ if __package__ else "")
 APP_ICON = QIcon(":/assets/icon.svg")
+
+
+class BarcodeTableModel(QAbstractTableModel):
+    def __init__(self, barcodes, parent=None):
+        super().__init__(parent)
+        self.barcodes = barcodes
+        self.columns = [
+            "id",
+            "product_id",
+            "barcode",
+            "qu_id",
+            "amount",
+            "shopping_location_id",
+            "last_price",
+            "row_created_timestamp",
+            "note",
+        ]
+
+    def rowCount(self, parent=None):
+        return len(self.barcodes)
+
+    def columnCount(self, parent=None):
+        return len(self.columns)
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+
+        if role == Qt.DisplayRole:
+            value = self.barcodes[index.row()].get(self.columns[index.column()], "")
+            return str(value)
+
+        return None
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return self.columns[section]
+            return section + 1
+        return None
 
 
 class ApiClient(QObject):
@@ -109,6 +153,133 @@ class ApiClient(QObject):
 
         reply.finished.connect(finished)
 
+    def put(self, path: str, *, payload=None, callback=None):
+        url = QUrl(self.base_url + path)
+
+        request = QNetworkRequest(url)
+        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+        request.setRawHeader(b"accept", b"application/json")
+
+        for k, v in self.headers.items():
+            request.setRawHeader(k.encode(), v.encode())
+
+        body = QByteArray()
+        if payload is not None:
+            body = QByteArray(json.dumps(payload).encode("utf-8"))
+
+        reply = self.net.put(request, body)
+
+        def finished():
+            if reply.error() != QNetworkReply.NetworkError.NoError:
+                QMessageBox.critical(
+                    None,
+                    self.tr("Network error"),
+                    reply.errorString(),
+                )
+                reply.deleteLater()
+                return
+
+            status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+            if status is not None and int(status) >= 400:
+                QMessageBox.critical(
+                    None,
+                    self.tr("HTTP error"),
+                    f"Server returned HTTP {status}",
+                )
+                reply.deleteLater()
+                return
+
+            raw = bytes(reply.readAll()).strip()
+            if raw:
+                try:
+                    data = json.loads(raw)
+                except json.JSONDecodeError:
+                    QMessageBox.critical(
+                        None,
+                        self.tr("Error"),
+                        "Invalid JSON response from server",
+                    )
+                    reply.deleteLater()
+                    return
+            else:
+                data = None
+
+            if callback:
+                callback(data)
+
+            reply.deleteLater()
+
+        reply.finished.connect(finished)
+
+
+class BarcodeAmountRemover(QDialog):
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+
+        self.ui = Ui_BarcodeAmountRemover()
+        self.ui.setupUi(self)
+        self.setWindowIcon(APP_ICON)
+        self.api_key, self.url = check_or_load_gui_login()
+
+        if not self.api_key or not self.url:
+            if not self._show_login_dialog():
+                QMessageBox.critical(self, self.tr("Error"), self.tr("API key and server URL are required."))
+                sys.exit(1)
+
+        self.headers = {
+            "GROCY-API-KEY": self.api_key,
+        }
+
+        self.api = ApiClient(self.url, self.headers, self)
+
+        self.ui.getBarcodesButton.clicked.connect(self._get_barcodes)
+        self.ui.removeAmountButton.clicked.connect(self._remove_amount)
+        self.ui.messageList.hide()
+
+    def _get_barcodes(self):
+        self.api.get(
+            "/api/objects/product_barcodes",
+            callback=lambda data: self._on_barcodes_loaded(data),
+        )
+        self.api.get(
+            "/api/objects/products",
+            callback=lambda data: self._on_products_loaded(data),
+        )
+
+    def _on_barcodes_loaded(self, data):
+        self.barcodes = data
+
+        model = BarcodeTableModel(self.barcodes)
+        self.ui.tableView.setModel(model)
+        self.ui.tableView.resizeColumnsToContents()
+
+    def _on_products_loaded(self, data):
+        self.products = data
+
+    def _remove_amount(self):
+        products = index_by_key(self.products, "id")
+        self.ui.messageList.clear()
+        self.ui.messageList.show()
+
+        for barcode in self.barcodes:
+            if barcode["amount"] is not None:
+                self.ui.messageList.addItem(
+                    f'removing barcode amount "{barcode["amount"]}" from product "{products[barcode["product_id"]]["name"]}" barcode {barcode["barcode"]}'
+                )
+                self.api.put(
+                    f"/api/objects/product_barcodes/{barcode['id']}",
+                    payload={
+                        "id": barcode["id"],
+                        "product_id": barcode["product_id"],
+                        "barcode": barcode["barcode"],
+                        "qu_id": barcode["qu_id"],
+                        "amount": None,
+                        "shopping_location_id": barcode["shopping_location_id"],
+                        "last_price": barcode["last_price"],
+                        "note": barcode["note"],
+                    },
+                )
+
 
 class LoginDialog(QDialog):
     def __init__(self, parent=None) -> None:
@@ -166,6 +337,7 @@ class MainWindow(QMainWindow):
         self.ui.fontComboBox.currentFontChanged.connect(self._change_font)
         self.ui.actionConfig.triggered.connect(self._show_login_dialog)
         self.ui.actionInfo.triggered.connect(self._show_info_dialog)
+        self.ui.actionBarcode.triggered.connect(self._show_barcode_amount_remover)
 
         self._change_font()
         self._init_type_selection()
@@ -200,6 +372,10 @@ class MainWindow(QMainWindow):
         create_codepage(matrix, os.path.join(outdir, product_name + ".pdf"), product_name, self.currentFont)
         self._show_pdf_done_dialog(os.path.join(outdir, product_name + ".pdf"), "Stickers PDF generated successfully.")
         self.ui.generateStickersButton.setDisabled(False)
+
+    def _show_barcode_amount_remover(self) -> None:
+        dialog = BarcodeAmountRemover(self)
+        dialog.exec()
 
     def _show_login_dialog(self) -> bool:
         curr_api_key, curr_url = check_or_load_gui_login()
@@ -405,7 +581,9 @@ class MainWindow(QMainWindow):
         self.ui.generateStickersButton.setDisabled(True)
         product_name = self.ui.productCombo.currentText()
         if not product_name:
-            QMessageBox.warning(self, self.tr("Product missing"), self.tr("Please select product to generate stickers for."))
+            QMessageBox.warning(
+                self, self.tr("Product missing"), self.tr("Please select product to generate stickers for.")
+            )
             self.ui.generateStickersButton.setDisabled(False)
             return
 
@@ -424,7 +602,9 @@ class MainWindow(QMainWindow):
             selected.append(self.filtered_products[idx])
 
         if not selected:
-            QMessageBox.warning(self, self.tr("Product(s) missing"), self.tr("Please select product(s) to generate list for."))
+            QMessageBox.warning(
+                self, self.tr("Product(s) missing"), self.tr("Please select product(s) to generate list for.")
+            )
             self.ui.generateListButton.setDisabled(False)
             return
 

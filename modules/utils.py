@@ -11,7 +11,7 @@ from ppf.datamatrix import DataMatrix
 from reportlab.lib import colors
 
 try:
-    from modules._version import APP_VERSION
+    from modules._version import APP_VERSION # pyright: ignore[reportMissingImports]
 except Exception:
     APP_VERSION = None
 
