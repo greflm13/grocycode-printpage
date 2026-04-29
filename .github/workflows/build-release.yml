@@ -157,6 +157,7 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
+          source venv/bin/activate
           pyside6-deploy -c pysidedeploy.linux.spec --force
 
       - name: Build desktop app (macOS)
