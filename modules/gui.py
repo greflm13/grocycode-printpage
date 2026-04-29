@@ -36,6 +36,7 @@ from codesheet import create_codesheet
 from ui.main_window import Ui_MainWindow
 from ui.config_window import Ui_Dialog
 from ui.barcode_window import Ui_BarcodeAmountRemover
+from modules.fonts import enumerate_system_fonts, PdfSafeFontComboBox
 from modules.utils import (
     check_or_load_gui_login,
     index_by_key,
@@ -316,6 +317,10 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.setWindowIcon(APP_ICON)
 
+        self._font_inventory = enumerate_system_fonts()
+
+        self.ui.fontComboBox = PdfSafeFontComboBox(self._font_inventory, self.ui.fontGroup)
+
         self.api_key, self.url = check_or_load_gui_login()
 
         if not self.api_key or not self.url:
@@ -334,7 +339,7 @@ class MainWindow(QMainWindow):
             callback=lambda data: self._on_products_loaded(data),
         )
 
-        self.ui.fontComboBox.currentFontChanged.connect(self._change_font)
+        self.ui.fontComboBox.currentTextChanged.connect(self._change_font)
         self.ui.actionConfig.triggered.connect(self._show_login_dialog)
         self.ui.actionInfo.triggered.connect(self._show_info_dialog)
         self.ui.actionBarcode.triggered.connect(self._show_barcode_amount_remover)
@@ -448,21 +453,8 @@ class MainWindow(QMainWindow):
         )
 
     def _change_font(self) -> None:
-        font = self.ui.fontComboBox.currentFont()
-
-        family = font.family()
-        weight = font.weight()
-        italic = font.italic()
-
-
-        font_path = find_system_font_file(family, weight, italic)
-
-        key = f"{font_path}".encode()
-        font_id = hashlib.md5(key).hexdigest()[:8]
-        self.currentFont = font_id
-
-        if font_id not in pdfmetrics.getRegisteredFontNames():
-            pdfmetrics.registerFont(TTFont(font_id, font_path))
+        entry = self.ui.fontComboBox.current_font_entry()
+        self.currentFont = entry.font_id
 
     def _init_output_directory(self) -> None:
         default_output = os.path.join(os.getcwd(), "output")
