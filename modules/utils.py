@@ -11,7 +11,7 @@ from ppf.datamatrix import DataMatrix
 from reportlab.lib import colors
 
 try:
-    from modules._version import APP_VERSION # pyright: ignore[reportMissingImports]
+    from modules._version import APP_VERSION  # pyright: ignore[reportMissingImports]
 except Exception:
     APP_VERSION = None
 
@@ -65,17 +65,45 @@ def get_version() -> str:
     return "dev"
 
 
+def weight_keywords(weight: int) -> list[str]:
+    if weight >= 850:
+        return ["Black"]
+    if weight >= 800:
+        return ["ExtraBold", "UltraBold"]
+    if weight >= 700:
+        return ["Bold"]
+    if weight >= 600:
+        return ["SemiBold", "DemiBold"]
+    if weight >= 500:
+        return ["Medium"]
+    return ["Regular", "Normal"]
+
+
 @lru_cache(maxsize=128)
-def find_system_font_file(family: str, bold: bool, italic: bool) -> str:
+def find_system_font_file(family: str, weight: int, italic: bool) -> str:
     """
-    Locate a system font file matching the requested family/style.
+    Locate a system font file matching the requested family / weight / italic.
     Returns a path to a .ttf / .otf file.
     """
 
     if sys.platform.startswith("linux"):
-        style = "Bold" if bold else "Regular"
+        weight_map = {
+            100: "Thin",
+            200: "ExtraLight",
+            300: "Light",
+            400: "Regular",
+            500: "Medium",
+            600: "DemiBold",
+            700: "Bold",
+            800: "ExtraBold",
+            900: "Black",
+        }
+
+        closest = min(weight_map, key=lambda w: abs(w - weight))
+        style = weight_map[closest]
+
         if italic:
-            style = f"{style} Italic"
+            style += " Italic"
 
         result = subprocess.run(
             ["fc-match", "-f", "%{file}", f"{family}:style={style}"],
@@ -84,7 +112,12 @@ def find_system_font_file(family: str, bold: bool, italic: bool) -> str:
             text=True,
             check=True,
         )
-        return result.stdout.strip()
+
+        path = result.stdout.strip()
+        if path:
+            return path
+
+        raise RuntimeError(f"Font not found: {family}")
 
     if sys.platform.startswith("win"):
         import winreg
@@ -92,11 +125,45 @@ def find_system_font_file(family: str, bold: bool, italic: bool) -> str:
         fonts_dir = os.path.join(os.environ["WINDIR"], "Fonts")
         reg_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
 
+        wanted = family.lower()
+        keywords = weight_keywords(weight)
+
+        def score(name: str) -> int:
+            lname = name.lower()
+            s = 0
+
+            for kw in keywords:
+                if kw.lower() in lname:
+                    s += 4
+
+            if italic and "italic" in lname:
+                s += 2
+            if not italic and "italic" not in lname:
+                s += 1
+
+            return s
+
+        best = None
+        best_score = -1
+
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path) as key:
             for i in range(winreg.QueryInfoKey(key)[1]):
                 name, value, _ = winreg.EnumValue(key, i)
-                if family.lower() in name.lower():
-                    return os.path.join(fonts_dir, value)
+
+                if wanted not in name.lower():
+                    continue
+
+                path = os.path.join(fonts_dir, value)
+                if not os.path.exists(path):
+                    continue
+
+                s = score(name)
+                if s > best_score:
+                    best = path
+                    best_score = s
+
+        if best:
+            return best
 
         raise RuntimeError(f"Font not found: {family}")
 
@@ -110,9 +177,36 @@ def find_system_font_file(family: str, bold: bool, italic: bool) -> str:
         )
 
         data = json.loads(result.stdout)
+        wanted = family.lower()
+        keywords = weight_keywords(weight)
+
+        best = None
+        best_score = -1
+
         for item in data.get("SPFontsDataType", []):
-            if family.lower() in item.get("_name", "").lower():
-                return item["path"]
+            name = item.get("_name", "").lower()
+            path = item.get("path")
+
+            if wanted not in name or not path:
+                continue
+
+            s = 0
+
+            for kw in keywords:
+                if kw.lower() in name:
+                    s += 4
+
+            if italic and "italic" in name:
+                s += 2
+            if not italic and "italic" not in name:
+                s += 1
+
+            if s > best_score:
+                best = path
+                best_score = s
+
+        if best:
+            return best
 
         raise RuntimeError(f"Font not found: {family}")
 

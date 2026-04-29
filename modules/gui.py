@@ -451,16 +451,18 @@ class MainWindow(QMainWindow):
         font = self.ui.fontComboBox.currentFont()
 
         family = font.family()
-        bold = font.bold()
+        weight = font.weight()
         italic = font.italic()
 
-        font_path = find_system_font_file(family, bold, italic)
+
+        font_path = find_system_font_file(family, weight, italic)
 
         key = f"{font_path}".encode()
         font_id = hashlib.md5(key).hexdigest()[:8]
         self.currentFont = font_id
 
-        pdfmetrics.registerFont(TTFont(font_id, font_path))
+        if font_id not in pdfmetrics.getRegisteredFontNames():
+            pdfmetrics.registerFont(TTFont(font_id, font_path))
 
     def _init_output_directory(self) -> None:
         default_output = os.path.join(os.getcwd(), "output")
