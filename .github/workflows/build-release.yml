@@ -67,7 +67,6 @@ jobs:
     strategy:
       matrix:
         include:
-
           - runner: ubuntu-latest
             os: linux
             arch: x64
@@ -188,8 +187,16 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
-          skip-decompress: true
           path: dist
+
+      - name: Package release assets
+        shell: bash
+        run: |
+          cd dist
+              
+          for d in GrocyCodePrintpage-*; do
+            zip -r "$d.zip" "$d/"*
+          done
 
       - name: Create release
         uses: softprops/action-gh-release@v3
@@ -197,4 +204,4 @@ jobs:
           tag_name: ${{ needs.version.outputs.tag }}
           make_latest: true
           generate_release_notes: true
-          files: dist/*
+          files: dist/*.zip
