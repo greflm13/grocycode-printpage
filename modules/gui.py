@@ -464,7 +464,6 @@ class MainWindow(QMainWindow):
 
     def _init_output_directory(self) -> None:
         default_output = os.path.join(os.getcwd(), "output")
-        os.makedirs(default_output, exist_ok=True)
 
         self.ui.outputDir.setText(default_output)
 
@@ -474,10 +473,11 @@ class MainWindow(QMainWindow):
         directory = QFileDialog.getExistingDirectory(self, "Select Output Directory", self.ui.outputDir.text())
         if directory:
             self.ui.outputDir.setText(directory)
-            os.makedirs(directory, exist_ok=True)
 
     def _outdir(self) -> str:
-        return self.ui.outputDir.text()
+        directory = self.ui.outputDir.text()
+        os.makedirs(directory, exist_ok=True)
+        return directory
 
     def _init_type_selection(self) -> None:
         self.ui.typeCombo.currentTextChanged.connect(self._on_type_changed)
