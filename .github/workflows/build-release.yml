@@ -160,6 +160,12 @@ jobs:
           source venv/bin/activate
           pyside6-deploy -c pysidedeploy.linux.spec --force
 
+          cd dist
+          FILE=$(ls | head -n 1)
+
+          EXT="${FILE##*.}"
+          mv "$FILE" "GrocyCodePrintpage-linux-${{ matrix.arch }}.${EXT}"
+
       - name: Build desktop app (macOS)
         if: runner.os == 'macOS'
         shell: bash
@@ -167,14 +173,14 @@ jobs:
           source venv/bin/activate
           pyside6-deploy -c pysidedeploy.macos.spec --force
           pushd dist > /dev/null
-          APP_BUNDLE=$(ls *.app | head -n 1)
+          APP_BUNDLE=$(find . -maxdepth 2 -name "*.app" -type d | head -n 1)
           if [[ -z "$APP_BUNDLE" ]]; then
             echo "No .app bundle found in dist/"
+            find . -maxdepth 3 -print
             exit 1
           fi
-          ditto -c -k --sequesterRsrc --keepParent \
-            "$APP_BUNDLE" \
-            "GrocyCodePrintpage-macos-${{ matrix.arch }}.zip"
+          APP_BUNDLE=$(basename "$APP_BUNDLE")
+          ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE" "GrocyCodePrintpage-macos-${{ matrix.arch }}.zip"
           popd > /dev/null
 
       - name: Install dependencies (Windows)
@@ -191,6 +197,11 @@ jobs:
         run: |
           venv\Scripts\Activate.ps1
           pyside6-deploy -c pysidedeploy.windows.spec --force
+
+          Set-Location dist
+          $file = Get-ChildItem | Select-Object -First 1
+          $ext = $file.Extension
+          Rename-Item $file "GrocyCodePrintpage-windows-${{ matrix.arch }}$ext"
 
       - name: Upload macOS asset to GitHub Release
         if: runner.os == 'macOS'
