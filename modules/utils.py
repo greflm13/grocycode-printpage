@@ -122,8 +122,18 @@ def find_system_font_file(family: str, weight: int, italic: bool) -> str:
     if sys.platform.startswith("win"):
         import winreg
 
-        fonts_dir = os.path.join(os.environ["WINDIR"], "Fonts")
-        reg_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+        system_fonts_dir = os.path.join(os.environ["WINDIR"], "Fonts")
+        user_fonts_dir = os.path.join(
+            os.environ.get("LOCALAPPDATA", ""),
+            "Microsoft",
+            "Windows",
+            "Fonts",
+        )
+
+        registry_roots = [
+            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", system_fonts_dir),
+            (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", user_fonts_dir),
+        ]
 
         wanted = family.lower()
         keywords = weight_keywords(weight)
@@ -141,29 +151,51 @@ def find_system_font_file(family: str, weight: int, italic: bool) -> str:
             if not italic and "italic" not in lname:
                 s += 1
 
+            if lname.startswith(wanted):
+                s += 1
+
             return s
 
-        best = None
-        best_score = -1
+        candidates = []
 
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path) as key:
-            for i in range(winreg.QueryInfoKey(key)[1]):
-                name, value, _ = winreg.EnumValue(key, i)
+        for root, reg_path, base_dir in registry_roots:
+            try:
+                with winreg.OpenKey(root, reg_path) as key:
+                    for i in range(winreg.QueryInfoKey(key)[1]):
+                        name, value, _ = winreg.EnumValue(key, i)
 
-                if wanted not in name.lower():
+                        if wanted not in name.lower():
+                            continue
+
+                        if os.path.isabs(value):
+                            path = value
+                        else:
+                            path = os.path.join(base_dir, value)
+
+                        if not os.path.exists(path):
+                            continue
+
+                        candidates.append((score(name), path))
+            except FileNotFoundError:
+                pass
+
+        for extra_dir in (system_fonts_dir, user_fonts_dir):
+            if not os.path.isdir(extra_dir):
+                continue
+
+            for fname in os.listdir(extra_dir):
+                if not fname.lower().endswith((".ttf", ".otf")):
                     continue
 
-                path = os.path.join(fonts_dir, value)
-                if not os.path.exists(path):
+                if wanted not in fname.lower():
                     continue
 
-                s = score(name)
-                if s > best_score:
-                    best = path
-                    best_score = s
+                path = os.path.join(extra_dir, fname)
+                candidates.append((1, path))
 
-        if best:
-            return best
+        if candidates:
+            candidates.sort(reverse=True)
+            return candidates[0][1]
 
         raise RuntimeError(f"Font not found: {family}")
 
