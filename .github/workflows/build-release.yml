@@ -223,6 +223,7 @@ jobs:
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           files: dist/**
+          draft: true
 
   finalize-release:
     needs:
