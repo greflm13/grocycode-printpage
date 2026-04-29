@@ -18,11 +18,11 @@ jobs:
       prev: ${{ steps.versions.outputs.prev }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -93,16 +93,15 @@ jobs:
       APP_VERSION: ${{ needs.version.outputs.prev }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.version.outputs.tag }}
           fetch-depth: 0
           submodules: recursive
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
-          architecture: ${{ matrix.arch }}
+          python-version: "3.12"
 
       - name: Generate macOS icon (.icns)
         if: runner.os == 'macOS'
@@ -173,7 +172,7 @@ jobs:
           pyside6-deploy -c pysidedeploy.windows.spec --force
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: GrocyCodePrintpage-${{ runner.os }}-${{ matrix.arch }}
           path: |
@@ -187,23 +186,15 @@ jobs:
     if: needs.version.outputs.changed == 'true'
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
+          skip-decompress: true
           path: dist
 
-      - name: Package release assets
-        shell: bash
-        run: |
-          cd dist
-              
-          for d in GrocyCodePrintpage-*; do
-            zip -r "$d.zip" "$d/"*
-          done
-
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           make_latest: true
           generate_release_notes: true
-          files: dist/*.zip
+          files: dist/*
